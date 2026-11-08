@@ -33,18 +33,23 @@ import androidx.leanback.widget.PageRow;
 import androidx.leanback.widget.Row;
 
 import com.bumptech.glide.Glide;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
 import com.liskovsoft.smartyoutubetv2.common.misc.CrashRestorer;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
+import com.liskovsoft.smartyoutubetv2.common.misc.AppDataSourceManager;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.BrowseSectionFragmentFactory;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.SectionHeaderItem;
@@ -52,24 +57,29 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.browse.dialog.ErrorDialogFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** A compact/expanded TV rail around SmartTube's existing section and service contracts. */
 public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private static final int BACKGROUND = 0xFF0F0F0F;
     private static final int TEXT = 0xFFF1F1F1;
     private static final int MUTED = 0xFFAAAAAA;
+    private static final int NAV_LIBRARY = -10001;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<BrowseSection> sections = new ArrayList<>();
     private final Map<Integer, View> navigationItems = new HashMap<>();
     private final List<TextView> navigationLabels = new ArrayList<>();
+    private final List<View> advancedItems = new ArrayList<>();
     private final Map<Integer, Video> savedVideos = new HashMap<>();
     private BrowsePresenter presenter;
     private BrowseSectionFragmentFactory factory;
     private CrashRestorer restorer;
     private RootLayout root;
-    private ScrollView rail;
+    private FrameLayout rail;
+    private ScrollView railScroll;
     private LinearLayout navigation;
     private FrameLayout translatedContent;
     private FrameLayout content;
@@ -77,12 +87,21 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private ImageView avatar;
     private TextView accountName;
     private View accountButton;
+    private View settingsButton;
+    private View groupDivider;
+    private View microphoneHeader;
+    private View searchHeader;
+    private View brandHeader;
     private int selectedSection = -1;
     private boolean expanded;
     private boolean initialResume = true;
     private boolean pendingContentFocus;
     private boolean showingError;
     private boolean consumedBack;
+    private boolean showingLibrary;
+    private boolean pendingLibrarySelection;
+    private boolean pendingLibraryFocus;
+    private boolean restoreLibrary;
     private Video pausedVideo;
     private final ViewTreeObserver.OnGlobalFocusChangeListener focusListener = (oldFocus, newFocus) -> {
         if (newFocus != null && root != null) {
@@ -97,6 +116,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         presenter = BrowsePresenter.instance(requireContext());
         presenter.setView(this);
         restorer = new CrashRestorer(requireContext(), state);
+        restoreLibrary = state != null && state.getBoolean("personal.browse.library", false);
         factory = new BrowseSectionFragmentFactory(this::onSectionReady) {
             @Override
             protected Fragment createRowsFragment() {
@@ -105,6 +125,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
 
             @Override
             protected Fragment createGridFragment() {
+                if (showingLibrary && selectedSection == MediaGroup.TYPE_HISTORY) return new PersonalLibraryFragment();
                 return new PersonalVideoGridFragment();
             }
         };
@@ -119,6 +140,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         root.setClipChildren(true);
 
         translatedContent = new FrameLayout(context);
+        translatedContent.setClipChildren(false);
+        translatedContent.setClipToPadding(false);
         FrameLayout.LayoutParams translatedParams = new FrameLayout.LayoutParams(-1, -1);
         translatedParams.leftMargin = dp(78);
         root.addView(translatedContent, translatedParams);
@@ -137,16 +160,22 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         brandParams.topMargin = dp(33);
         brandParams.rightMargin = dp(54);
         root.addView(brand, brandParams);
+        brandHeader = brand;
 
-        rail = new ScrollView(context);
+        rail = new FrameLayout(context);
         rail.setBackgroundColor(BACKGROUND);
-        rail.setVerticalScrollBarEnabled(false);
-        rail.setHorizontalScrollBarEnabled(false);
-        rail.setFillViewport(true);
+        railScroll = new ScrollView(context);
+        railScroll.setVerticalScrollBarEnabled(false);
+        railScroll.setHorizontalScrollBarEnabled(false);
+        railScroll.setFillViewport(false);
         navigation = new LinearLayout(context);
         navigation.setOrientation(LinearLayout.VERTICAL);
-        navigation.setPadding(dp(16.5f), dp(33), dp(16.5f), dp(20));
-        rail.addView(navigation, new ScrollView.LayoutParams(-1, -2));
+        navigation.setPadding(dp(16.5f), 0, dp(16.5f), dp(16.5f));
+        railScroll.addView(navigation, new ScrollView.LayoutParams(-1, -2));
+        FrameLayout.LayoutParams scrollingParams = new FrameLayout.LayoutParams(-1, -1);
+        scrollingParams.topMargin = dp(97.5f);
+        scrollingParams.bottomMargin = dp(67.5f);
+        rail.addView(railScroll, scrollingParams);
         root.addView(rail, new FrameLayout.LayoutParams(dp(78), -1));
 
         progress = new ProgressBar(context);
@@ -163,7 +192,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         super.onActivityCreated(state);
         presenter.onViewInitialized();
         restorer.restoreHeader((index, video) -> {
-            selectSection(index, true);
+            if (restoreLibrary) { restoreLibrary = false; openLibrary(true); }
+            else selectSection(index, true);
             selectSectionItem(video);
         });
         restorer.restorePlayback();
@@ -182,6 +212,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         FrameLayout.LayoutParams micParams = new FrameLayout.LayoutParams(dp(36), dp(36));
         micParams.topMargin = dp(33);
         translatedContent.addView(microphone, micParams);
+        microphoneHeader = microphone;
 
         TextView search = text(getString(R.string.personal_search), 18);
         search.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -194,13 +225,17 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         searchParams.topMargin = dp(33);
         searchParams.leftMargin = dp(45);
         translatedContent.addView(search, searchParams);
+        searchHeader = search;
     }
 
     private void rebuildRail() {
         if (navigation == null) return;
         navigation.removeAllViews();
+        if (accountButton != null) rail.removeView(accountButton);
+        if (settingsButton != null) rail.removeView(settingsButton);
         navigationItems.clear();
         navigationLabels.clear();
+        advancedItems.clear();
         LinearLayout account = new LinearLayout(requireContext());
         account.setGravity(Gravity.CENTER_VERTICAL);
         account.setFocusable(true);
@@ -208,7 +243,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         avatar = new ImageView(requireContext());
         avatar.setImageResource(android.R.drawable.ic_menu_myplaces);
         account.addView(avatar, new LinearLayout.LayoutParams(dp(27), dp(27)));
-        accountName = text(getString(R.string.personal_guest), 16);
+        accountName = text(getString(R.string.personal_guest), 15);
         accountName.setSingleLine(true);
         accountName.setTextColor(textColors());
         LinearLayout.LayoutParams accountLabelParams = new LinearLayout.LayoutParams(-1, -1);
@@ -216,41 +251,142 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         account.addView(accountName, accountLabelParams);
         navigationLabels.add(accountName);
         account.setOnClickListener(view -> AccountSelectionPresenter.instance(requireContext()).show(true));
-        LinearLayout.LayoutParams accountParams = new LinearLayout.LayoutParams(-1, dp(36));
-        accountParams.leftMargin = dp(9);
-        accountParams.bottomMargin = dp(9);
-        navigation.addView(account, accountParams);
+        FrameLayout.LayoutParams accountParams = new FrameLayout.LayoutParams(-1, dp(36));
+        accountParams.leftMargin = dp(25.5f);
+        accountParams.rightMargin = dp(16.5f);
+        accountParams.topMargin = dp(33);
+        rail.addView(account, accountParams);
         accountButton = account;
 
         View search = navigationButton(getString(R.string.personal_search), R.drawable.action_search);
         search.setOnClickListener(view -> SearchPresenter.instance(requireContext()).startSearch(null));
         navigation.addView(search, new LinearLayout.LayoutParams(-1, dp(39)));
 
-        for (int index = 0; index < sections.size(); index++) {
-            BrowseSection section = sections.get(index);
-            final int sectionIndex = index;
-            View item = navigationButton(section.getTitle(), section.getResId());
-            item.setSelected(section.getId() == selectedSection);
-            item.setOnFocusChangeListener((view, focused) -> {
-                if (focused) activateSection(sectionIndex, false, false);
-            });
-            item.setOnClickListener(view -> activateSection(sectionIndex, true, true));
-            item.setOnLongClickListener(view -> {
-                presenter.onSectionLongPressed(section.getId());
-                return true;
-            });
-            item.setOnKeyListener((view, keyCode, event) -> {
-                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_MENU) {
-                    presenter.onSectionLongPressed(section.getId());
-                    return true;
-                }
-                return false;
-            });
-            navigationItems.put(section.getId(), item);
-            navigation.addView(item, new LinearLayout.LayoutParams(-1, dp(39)));
+        // Display order is independent of the presenter's section indices and pinned-item order.
+        Set<Integer> displayed = new HashSet<>();
+        for (int id : new int[]{MediaGroup.TYPE_HOME, MediaGroup.TYPE_SHORTS, MediaGroup.TYPE_SUBSCRIPTIONS}) {
+            appendNavigationSection(id, displayed);
         }
+        View library = navigationButton(getString(R.string.personal_library_title), R.drawable.icon_playlist);
+        library.setOnFocusChangeListener((view, focused) -> { if (focused) openLibrary(false); });
+        library.setOnClickListener(view -> openLibrary(true));
+        navigationItems.put(NAV_LIBRARY, library);
+        navigation.addView(library, new LinearLayout.LayoutParams(-1, dp(39)));
+
+        groupDivider = new View(requireContext());
+        groupDivider.setBackgroundColor(0xFF3F3F3F);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(-1, dp(1.5f));
+        dividerParams.topMargin = dp(9);
+        dividerParams.bottomMargin = dp(9);
+        navigation.addView(groupDivider, dividerParams);
+        for (int id : new int[]{MediaGroup.TYPE_MUSIC, MediaGroup.TYPE_LIVE, MediaGroup.TYPE_GAMING, MediaGroup.TYPE_SPORTS}) {
+            appendNavigationSection(id, displayed);
+        }
+
+        List<Integer> extras = new ArrayList<>();
+        for (int index = 0; index < sections.size(); index++) {
+            int id = sections.get(index).getId();
+            if (!displayed.contains(id) && id != MediaGroup.TYPE_SETTINGS) extras.add(index);
+        }
+        if (!extras.isEmpty()) {
+            View advanced = navigationButton(getString(R.string.personal_navigation_advanced), android.R.drawable.ic_menu_more);
+            advanced.setOnClickListener(view -> {
+                setExpanded(true);
+                if (!advancedItems.isEmpty()) advancedItems.get(0).requestFocus();
+            });
+            navigation.addView(advanced, new LinearLayout.LayoutParams(-1, dp(39)));
+            for (int index : extras) {
+                View item = createSectionButton(index);
+                advancedItems.add(item);
+                navigation.addView(item, new LinearLayout.LayoutParams(-1, dp(39)));
+            }
+        }
+
+        int settingsIndex = findSectionIndex(MediaGroup.TYPE_SETTINGS);
+        if (settingsIndex >= 0) settingsButton = createSectionButton(settingsIndex);
+        else {
+            settingsButton = navigationButton(getString(R.string.header_settings), R.drawable.icon_settings);
+            settingsButton.setOnClickListener(view -> showSettingsFallback());
+        }
+        FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(-1, dp(39), Gravity.BOTTOM);
+        settingsParams.leftMargin = dp(16.5f);
+        settingsParams.rightMargin = dp(16.5f);
+        settingsParams.bottomMargin = dp(28.5f);
+        rail.addView(settingsButton, settingsParams);
+        updateNavigationSelection();
         updateBadge();
         applyRailWidth();
+    }
+
+    private void appendNavigationSection(int id, Set<Integer> displayed) {
+        int index = findSectionIndex(id);
+        if (index < 0) return;
+        displayed.add(id);
+        navigation.addView(createSectionButton(index), new LinearLayout.LayoutParams(-1, dp(39)));
+    }
+
+    private View createSectionButton(int index) {
+        BrowseSection section = sections.get(index);
+        View item = navigationButton(section.getTitle(), section.getResId());
+        if (section.getIconUrl() != null) {
+            ImageView icon = (ImageView) ((LinearLayout) item).getChildAt(0);
+            icon.setImageTintList(null);
+            Glide.with(this).load(section.getIconUrl()).circleCrop().into(icon);
+        }
+        item.setOnFocusChangeListener((view, focused) -> {
+            if (focused) activateNavigationSection(index, false, false);
+        });
+        item.setOnClickListener(view -> activateNavigationSection(index, true, true));
+        item.setOnLongClickListener(view -> { presenter.onSectionLongPressed(section.getId()); return true; });
+        item.setOnKeyListener((view, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_MENU) {
+                presenter.onSectionLongPressed(section.getId()); return true;
+            }
+            return false;
+        });
+        navigationItems.put(section.getId(), item);
+        return item;
+    }
+
+    private int findSectionIndex(int id) {
+        for (int index = 0; index < sections.size(); index++) if (sections.get(index).getId() == id) return index;
+        return -1;
+    }
+
+    private void activateNavigationSection(int index, boolean focus, boolean refresh) {
+        showingLibrary = false;
+        activateSection(index, focus, refresh);
+    }
+
+    private void openLibrary(boolean focus) {
+        showingLibrary = true;
+        int index = findSectionIndex(MediaGroup.TYPE_HISTORY);
+        if (index >= 0) activateSection(index, focus, true);
+        else {
+            pendingLibrarySelection = true;
+            pendingLibraryFocus = focus;
+            presenter.selectSection(MediaGroup.TYPE_HISTORY);
+            pendingLibrarySelection = false;
+        }
+    }
+
+    void openLibraryDestination(int sectionId) {
+        showingLibrary = false;
+        presenter.selectSection(sectionId);
+    }
+
+    private void showSettingsFallback() {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(requireContext());
+        for (SettingsItem item : AppDataSourceManager.instance().getSettingItems(requireContext())) {
+            dialog.appendSingleButton(UiOptionItem.from(item.title, option -> item.onClick.run()));
+        }
+        dialog.showDialog(getString(R.string.header_settings));
+    }
+
+    private void updateNavigationSelection() {
+        for (Map.Entry<Integer, View> entry : navigationItems.entrySet()) {
+            entry.getValue().setSelected(entry.getKey() == NAV_LIBRARY ? showingLibrary : !showingLibrary && entry.getKey() == selectedSection);
+        }
     }
 
     private View navigationButton(String title, int icon) {
@@ -258,13 +394,14 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         button.setGravity(Gravity.CENTER_VERTICAL);
         button.setFocusable(true);
         button.setBackground(buttonBackground(9));
-        button.setPadding(dp(14), 0, dp(12), 0);
+        button.setPadding(dp(13.5f), 0, dp(12), 0);
         ImageView image = new ImageView(requireContext());
         if (icon > 0) image.setImageResource(icon);
         tintImage(image);
         image.setDuplicateParentStateEnabled(true);
-        button.addView(image, new LinearLayout.LayoutParams(dp(17), dp(17)));
-        TextView label = text(title, 16);
+        button.addView(image, new LinearLayout.LayoutParams(dp(18), dp(18)));
+        TextView label = text(title, 15);
+        label.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         label.setTextColor(textColors());
         label.setSingleLine(true);
         label.setDuplicateParentStateEnabled(true);
@@ -280,7 +417,10 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         if (index < 0 || index >= sections.size() || content == null) return;
         BrowseSection section = sections.get(index);
         pendingContentFocus = focus;
-        if (section.getId() == selectedSection && factory.getCurrentFragment() != null) {
+        updateContentMode();
+        if (section.getId() == selectedSection && factory.getCurrentFragment() != null &&
+                showingLibrary == (factory.getCurrentFragment() instanceof PersonalLibraryFragment)) {
+            updateNavigationSelection();
             if (refresh) presenter.onSectionFocused(selectedSection);
             if (focus) focusOnContent();
             return;
@@ -289,14 +429,23 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             savedVideos.put(selectedSection, presenter.getCurrentVideo());
         }
         selectedSection = section.getId();
-        for (Map.Entry<Integer, View> entry : navigationItems.entrySet()) {
-            entry.getValue().setSelected(entry.getKey() == selectedSection);
-        }
+        updateNavigationSelection();
         Fragment fragment = factory.createFragment(new PageRow(new SectionHeaderItem(section)));
         showingError = false;
         showFragment(fragment);
         Video saved = savedVideos.get(selectedSection);
         if (saved != null) factory.selectCurrentFragmentItem(saved);
+    }
+
+    private void updateContentMode() {
+        if (content == null) return;
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) content.getLayoutParams();
+        params.topMargin = showingLibrary ? 0 : dp(88);
+        content.setLayoutParams(params);
+        int visibility = showingLibrary ? View.GONE : View.VISIBLE;
+        if (microphoneHeader != null) microphoneHeader.setVisibility(visibility);
+        if (searchHeader != null) searchHeader.setVisibility(visibility);
+        if (brandHeader != null) brandHeader.setVisibility(visibility);
     }
 
     private void onSectionReady(Row row) {
@@ -351,8 +500,12 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     @Override
     public void selectSection(int index, boolean focusOnContent) {
         if (sections.isEmpty()) return;
-        activateSection(Math.max(0, Math.min(index, sections.size() - 1)), focusOnContent, true);
-        if (!focusOnContent) focusNavigation();
+        int safeIndex = Math.max(0, Math.min(index, sections.size() - 1));
+        if (pendingLibrarySelection) showingLibrary = true;
+        else if (sections.get(safeIndex).getId() != MediaGroup.TYPE_HISTORY) showingLibrary = false;
+        boolean focus = pendingLibrarySelection ? pendingLibraryFocus : focusOnContent;
+        activateSection(safeIndex, focus, true);
+        if (!focus) focusNavigation();
     }
 
     @Override
@@ -382,6 +535,10 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     public void showError(ErrorFragmentData data) {
         handler.post(() -> {
             if (root != null) {
+                if (showingLibrary && factory.getCurrentFragment() instanceof PersonalLibraryFragment) {
+                    ((PersonalLibraryFragment) factory.getCurrentFragment()).showLibraryError(data);
+                    return;
+                }
                 showingError = true;
                 showFragment(new ErrorDialogFragment(data));
             }
@@ -428,7 +585,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
 
     private void focusNavigation() {
         setExpanded(true);
-        View item = navigationItems.get(selectedSection);
+        View item = navigationItems.get(showingLibrary ? NAV_LIBRARY : selectedSection);
         if (item != null) item.requestFocus();
         else if (accountButton != null) accountButton.requestFocus();
     }
@@ -445,6 +602,19 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         ViewGroup.LayoutParams params = rail.getLayoutParams();
         params.width = dp(expanded ? 267 : 78);
         rail.setLayoutParams(params);
+        rail.setBackgroundColor(expanded ? BACKGROUND : Color.TRANSPARENT);
+        navigation.setPadding(dp(16.5f), 0, dp(expanded ? 28.5f : 16.5f), dp(16.5f));
+        FrameLayout.LayoutParams scrollingParams = (FrameLayout.LayoutParams) railScroll.getLayoutParams();
+        scrollingParams.topMargin = dp(expanded ? 78 : 97.5f);
+        railScroll.setLayoutParams(scrollingParams);
+        FrameLayout.LayoutParams accountParams = (FrameLayout.LayoutParams) accountButton.getLayoutParams();
+        accountParams.rightMargin = dp(expanded ? 28.5f : 16.5f);
+        accountButton.setLayoutParams(accountParams);
+        FrameLayout.LayoutParams settingsParams = (FrameLayout.LayoutParams) settingsButton.getLayoutParams();
+        settingsParams.rightMargin = dp(expanded ? 28.5f : 16.5f);
+        settingsButton.setLayoutParams(settingsParams);
+        if (groupDivider != null) groupDivider.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        for (View item : advancedItems) item.setVisibility(expanded ? View.VISIBLE : View.GONE);
         for (TextView label : navigationLabels) label.setVisibility(expanded ? View.VISIBLE : View.GONE);
     }
 
@@ -493,6 +663,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         int index = 0;
         for (int i = 0; i < sections.size(); i++) if (sections.get(i).getId() == selectedSection) index = i;
         restorer.persistHeaderIndex(outState, index);
+        outState.putBoolean("personal.browse.library", showingLibrary);
         restorer.persistVideo(outState, presenter.getCurrentVideo());
     }
 
@@ -521,12 +692,19 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         factory.cleanup();
         root = null;
         rail = null;
+        railScroll = null;
         navigation = null;
         content = null;
         translatedContent = null;
         progress = null;
         avatar = null;
         accountName = null;
+        accountButton = null;
+        settingsButton = null;
+        microphoneHeader = null;
+        searchHeader = null;
+        brandHeader = null;
+        groupDivider = null;
         super.onDestroyView();
     }
 
@@ -540,6 +718,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         TextView view = new TextView(requireContext());
         view.setText(value);
         view.setTextSize(size);
+        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setTextColor(TEXT);
         view.setGravity(Gravity.CENTER_VERTICAL);
         view.setIncludeFontPadding(false);
