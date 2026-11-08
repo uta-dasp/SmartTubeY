@@ -67,6 +67,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private static final int TEXT = 0xFFF1F1F1;
     private static final int MUTED = 0xFFAAAAAA;
     private static final int NAV_LIBRARY = -10001;
+    private static final int NAV_SEARCH = -10002;
+    private static final int NAV_ADVANCED = -10003;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<BrowseSection> sections = new ArrayList<>();
     private final Map<Integer, View> navigationItems = new HashMap<>();
@@ -87,12 +89,14 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private TextView accountName;
     private View accountButton;
     private View settingsButton;
+    private View advancedButton;
     private View groupDivider;
     private View microphoneHeader;
     private View searchHeader;
     private View brandHeader;
     private int selectedSection = -1;
     private boolean expanded;
+    private boolean advancedOpen;
     private boolean initialResume = true;
     private boolean pendingContentFocus;
     private boolean showingError;
@@ -236,12 +240,19 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
 
     private void rebuildRail() {
         if (navigation == null) return;
+        View previousFocus = root != null ? root.findFocus() : null;
+        boolean restoreRailFocus = isInside(previousFocus, rail);
+        Integer previousNavigation = null;
+        for (Map.Entry<Integer, View> entry : navigationItems.entrySet()) {
+            if (entry.getValue() == previousFocus) previousNavigation = entry.getKey();
+        }
         navigation.removeAllViews();
         if (accountButton != null) rail.removeView(accountButton);
         if (settingsButton != null) rail.removeView(settingsButton);
         navigationItems.clear();
         navigationLabels.clear();
         advancedItems.clear();
+        advancedButton = null;
         LinearLayout account = new LinearLayout(requireContext());
         account.setGravity(Gravity.CENTER_VERTICAL);
         account.setFocusable(true);
@@ -266,6 +277,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
 
         View search = navigationButton(getString(R.string.personal_search), R.drawable.action_search);
         search.setOnClickListener(view -> SearchPresenter.instance(requireContext()).startSearch(null));
+        navigationItems.put(NAV_SEARCH, search);
         navigation.addView(search, new LinearLayout.LayoutParams(-1, dp(39)));
 
         // Display order is independent of the presenter's section indices and pinned-item order.
@@ -298,8 +310,14 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             View advanced = navigationButton(getString(R.string.personal_navigation_advanced), android.R.drawable.ic_menu_more);
             advanced.setOnClickListener(view -> {
                 setExpanded(true);
-                if (!advancedItems.isEmpty()) advancedItems.get(0).requestFocus();
+                setAdvancedOpen(!advancedOpen);
+                if (advancedOpen) {
+                    View selected = navigationItems.get(selectedSection);
+                    (advancedItems.contains(selected) ? selected : advancedItems.get(0)).requestFocus();
+                } else advanced.requestFocus();
             });
+            advancedButton = advanced;
+            navigationItems.put(NAV_ADVANCED, advanced);
             navigation.addView(advanced, new LinearLayout.LayoutParams(-1, dp(39)));
             for (int index : extras) {
                 View item = createSectionButton(index);
@@ -319,9 +337,16 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         settingsParams.rightMargin = dp(16.5f);
         settingsParams.bottomMargin = dp(28.5f);
         rail.addView(settingsButton, settingsParams);
+        if (advancedItems.isEmpty()) advancedOpen = false;
         updateNavigationSelection();
         updateBadge();
         applyRailWidth();
+        if (restoreRailFocus) {
+            View target = previousNavigation != null ? navigationItems.get(previousNavigation) : accountButton;
+            if (target == null) target = advancedButton != null ? advancedButton : accountButton;
+            if (advancedItems.contains(target)) setAdvancedOpen(true);
+            target.requestFocus();
+        }
     }
 
     private void appendNavigationSection(int id, Set<Integer> displayed) {
@@ -362,10 +387,14 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
 
     private void activateNavigationSection(int index, boolean focus, boolean refresh) {
         showingLibrary = false;
+        if (index >= 0 && index < sections.size() && !advancedItems.contains(navigationItems.get(sections.get(index).getId()))) {
+            setAdvancedOpen(false);
+        }
         activateSection(index, focus, refresh);
     }
 
     private void openLibrary(boolean focus) {
+        setAdvancedOpen(false);
         showingLibrary = true;
         int index = findSectionIndex(MediaGroup.TYPE_HISTORY);
         if (index >= 0) activateSection(index, focus, true);
@@ -394,6 +423,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         for (Map.Entry<Integer, View> entry : navigationItems.entrySet()) {
             entry.getValue().setSelected(entry.getKey() == NAV_LIBRARY ? showingLibrary : !showingLibrary && entry.getKey() == selectedSection);
         }
+        if (advancedButton != null) advancedButton.setSelected(!showingLibrary && advancedItems.contains(navigationItems.get(selectedSection)));
     }
 
     private View navigationButton(String title, int icon) {
@@ -614,6 +644,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private void focusNavigation() {
         setExpanded(true);
         View item = navigationItems.get(showingLibrary ? NAV_LIBRARY : selectedSection);
+        // Reopen the disclosure only when returning from an extra section's content.
+        setAdvancedOpen(advancedItems.contains(item));
         if (item != null) item.requestFocus();
         else if (accountButton != null) accountButton.requestFocus();
     }
@@ -643,14 +675,43 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         settingsParams.rightMargin = dp(expanded ? 28.5f : 16.5f);
         settingsButton.setLayoutParams(settingsParams);
         if (groupDivider != null) groupDivider.setVisibility(expanded ? View.VISIBLE : View.GONE);
-        for (View item : advancedItems) item.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        updateAdvancedVisibility();
         for (TextView label : navigationLabels) label.setVisibility(expanded ? View.VISIBLE : View.GONE);
+    }
+
+    private void setAdvancedOpen(boolean open) {
+        advancedOpen = open && !advancedItems.isEmpty();
+        updateAdvancedVisibility();
+    }
+
+    private void updateAdvancedVisibility() {
+        for (View item : advancedItems) item.setVisibility(expanded && advancedOpen ? View.VISIBLE : View.GONE);
+        if (advancedButton instanceof LinearLayout) {
+            TextView label = (TextView) ((LinearLayout) advancedButton).getChildAt(1);
+            label.setText(getString(R.string.personal_navigation_advanced) + (advancedOpen ? " ▾" : " ▸"));
+            advancedButton.setActivated(advancedOpen);
+        }
+    }
+
+    private View lastVisibleNavigationItem() {
+        if (navigation != null) for (int index = navigation.getChildCount() - 1; index >= 0; index--) {
+            View item = navigation.getChildAt(index);
+            if (item.getVisibility() == View.VISIBLE && item.isFocusable()) return item;
+        }
+        return accountButton;
     }
 
     private boolean handleKey(KeyEvent event) {
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             if (event.getAction() == KeyEvent.ACTION_UP && consumedBack) {
                 consumedBack = false;
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN && consumedBack) return true;
+            if (event.getAction() == KeyEvent.ACTION_DOWN && advancedOpen && root != null && isInside(root.findFocus(), rail)) {
+                if (advancedButton != null) advancedButton.requestFocus();
+                setAdvancedOpen(false);
+                consumedBack = true;
                 return true;
             }
             if (event.getAction() == KeyEvent.ACTION_DOWN && (!expanded ||
@@ -662,6 +723,18 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         }
         if (event.getAction() != KeyEvent.ACTION_DOWN || root == null) return false;
         View focus = root.findFocus();
+        if (isInside(focus, rail)) {
+            // The pinned Settings row must remain reachable without walking closed extras.
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && focus == lastVisibleNavigationItem() && settingsButton != null) {
+                settingsButton.requestFocus();
+                return true;
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && focus == settingsButton) {
+                View previous = lastVisibleNavigationItem();
+                if (previous != null) previous.requestFocus();
+                return true;
+            }
+        }
         if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT && isInside(focus, rail)) {
             focusOnContent();
             return true;
@@ -731,6 +804,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         accountName = null;
         accountButton = null;
         settingsButton = null;
+        advancedButton = null;
         microphoneHeader = null;
         searchHeader = null;
         brandHeader = null;
