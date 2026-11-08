@@ -25,6 +25,10 @@ Two remaining presentation gaps were corrected by this audit:
   State, metadata, and playback callbacks notify them; preference refresh reads the current
   original action label and icon as well as the description. Reopening a menu reuses the same
   models and action objects.
+- Subsequent physical-TV validation found native Shorts feed OK only emitted presenter
+  click notifications, whose base handlers are no-ops. Feed OK now calls the existing
+  engine's `setPlayWhenReady` exactly once before the original notification. It does
+  nothing before engine initialization. Regular controls retain the original transport.
 
 The 10 explicit Options commands match every nonempty `onButtonLongClicked` implementation
 in the upstream controller set. They call the original listener with the current original
@@ -41,7 +45,7 @@ long press where a visible original button exists.
 | Base feature | Personal route | Original implementation / state owner |
 | --- | --- | --- |
 | Previous | Center transport; Advanced | Original `SkipPreviousAction` → glue `previous()` → presenter `onPreviousClicked`; source restart threshold retained |
-| Play / pause | Center transport; Advanced; native Shorts feed OK | Original superclass `PlayPauseAction` / `PlayerAdapter`; Shorts calls the same presenter play/pause events |
+| Play / pause | Center transport; Advanced; native Shorts feed OK | Original superclass `PlayPauseAction` / `PlayerAdapter`; Shorts changes the same engine's `setPlayWhenReady` before preserving presenter click notifications |
 | Next | Center transport; Advanced; native Shorts Down | Original `SkipNextAction` → glue `next()` → presenter `onNextClicked` |
 | Full playback / quality settings | Advanced → Playback settings | Original `HighQualityAction` → `HQDialogController.onHighQualityClicked` |
 | Video quality | Settings → Quality; full HQ above | Real `FormatItem` video list / `HQDialogController.selectFormatOption`; full HQ retains codec-specific variants and presets |
@@ -149,6 +153,11 @@ Run with the existing Java 11 test runtime:
 ```text
 :smarttubetv:testStpersonalDebugUnitTest --tests com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerActionsTest
 ```
+
+`PersonalShortsPlaybackTest` adds two actual feed-view D-pad OK regressions with a recording
+engine subclass: playing → paused → playing performs one engine write before each notification,
+and OK before engine readiness performs neither operation. Its selector is
+`com.liskovsoft.smartyoutubetv2.tv.ui.personal.shorts.PersonalShortsPlaybackTest`.
 
 At source handoff these tests are written but delegated to the build owner; this audit did
 not run Gradle, sign an APK, modify an account, or control the TV.

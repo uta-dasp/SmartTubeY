@@ -112,11 +112,15 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
     }
 
     private void buildFeed(){
-        feed=new View(requireContext());feed.setFocusable(true);feed.setContentDescription(getString(R.string.personal_shorts_feed));
+        feed=createFeed(requireContext());place(wrapper,feed,291.5f,0,313,540);
+    }
+    View createFeed(Context context){
+        View feed=new View(context);feed.setFocusable(true);feed.setContentDescription(context.getString(R.string.personal_shorts_feed));
+        float density=context.getResources().getDisplayMetrics().density;
         StateListDrawable ring=new StateListDrawable();GradientDrawable focused=new GradientDrawable();
-        focused.setColor(0x00000000);focused.setCornerRadius(dp(14));focused.setStroke(dp(4),0xFFF1F1F1);
+        focused.setColor(0x00000000);focused.setCornerRadius(Math.round(14*density));focused.setStroke(Math.round(4*density),0xFFF1F1F1);
         ring.addState(new int[]{android.R.attr.state_focused},focused);ring.addState(new int[]{},new GradientDrawable());feed.setBackground(ring);
-        feed.setOnClickListener(view->togglePlayback());place(wrapper,feed,291.5f,0,313,540);
+        feed.setOnClickListener(view->togglePlayback());return feed;
     }
     private void buildSide(){
         side=new FrameLayout(requireContext());place(wrapper,side,0,0,-1,-1);
@@ -232,7 +236,14 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
         else if(section>=0)browse.selectSection(section);
     }
     private void leaveForSearch(){finishReally();SearchPresenter.instance(requireContext()).startSearch(null);}
-    private void togglePlayback(){if(isEngineInitialized()){if(getPlayWhenReady())presenter().onPauseClicked();else presenter().onPlayClicked();}}
+    private void togglePlayback(){
+        if(!isEngineInitialized())return;
+        boolean play=!getPlayWhenReady();
+        // These presenter events are notifications; the source transport changes the engine first.
+        setPlayWhenReady(play);
+        notifyFeedPlaybackClick(play);
+    }
+    protected void notifyFeedPlaybackClick(boolean play){if(play)presenter().onPlayClicked();else presenter().onPauseClicked();}
     private void action(int id){presenter().onButtonClicked(id,getButtonState(id));}
     private void showRegularControls(){regularControls=true;applyPresentation();super.showControls(true);}
 
