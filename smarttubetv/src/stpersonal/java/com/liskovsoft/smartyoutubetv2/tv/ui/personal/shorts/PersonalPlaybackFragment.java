@@ -39,7 +39,6 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalAccountChooserFragment;
 import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalBrowseFragment;
-import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalVideoCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackFragment;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -294,7 +293,7 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
     }
     private void setBounds(View view,float x,float y,float width,float height){FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(dp(width),dp(height),Gravity.TOP|Gravity.LEFT);params.leftMargin=dp(x);params.topMargin=dp(y);view.setLayoutParams(params);}
     private void place(FrameLayout parent,View view,float x,float y,float width,float height){FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(width<0?(int)width:dp(width),height<0?(int)height:dp(height));params.leftMargin=dp(x);params.topMargin=dp(y);parent.addView(view,params);}
-    private int dp(float value){return PersonalVideoCardPresenter.dp(requireContext(),value);}
+    private int dp(float value){return Math.round(value*requireContext().getResources().getDisplayMetrics().density);}
     private TextView text(String value,int size,boolean bold){TextView view=new TextView(requireContext());view.setText(value);view.setTextSize(size);view.setTextColor(0xFFF1F1F1);view.setTypeface(Typeface.create(bold?"sans-serif-medium":"sans-serif",Typeface.NORMAL));view.setIncludeFontPadding(false);view.setGravity(Gravity.CENTER_VERTICAL);return view;}
     private TextView button(String value,int size){TextView view=text(value,size,true);view.setFocusable(true);view.setTextColor(focusText());view.setGravity(Gravity.CENTER);view.setPadding(dp(12),0,dp(12),0);view.setBackground(buttonBackground(18));return view;}
     private StateListDrawable buttonBackground(float radius){StateListDrawable states=new StateListDrawable();for(boolean focused:new boolean[]{true,false}){GradientDrawable shape=new GradientDrawable();shape.setColor(focused?0xFFF1F1F1:0x00000000);shape.setCornerRadius(dp(radius));states.addState(focused?new int[]{android.R.attr.state_focused}:new int[]{},shape);}return states;}
