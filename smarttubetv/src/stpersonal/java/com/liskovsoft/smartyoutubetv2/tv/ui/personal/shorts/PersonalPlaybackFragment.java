@@ -122,10 +122,11 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
         titleCard=new View(requireContext());place(side,titleCard,627,228,306,69);
         authorCard=new View(requireContext());place(side,authorCard,627,354,306,45);
         subscriptionCard=new View(requireContext());place(side,subscriptionCard,627,405,306,45);
-        title=text("",18,true);title.setMaxLines(2);title.setEllipsize(android.text.TextUtils.TruncateAt.END);place(side,title,639,240,285,60);
+        title=text("",18,true);title.setGravity(Gravity.TOP);title.setMaxLines(2);title.setEllipsize(android.text.TextUtils.TruncateAt.END);place(side,title,639,240,285,60);
         title.setFocusable(true);title.setTextColor(focusText());title.setOnClickListener(view->action(R.id.action_info));
         authorAvatar=new ImageView(requireContext());place(side,authorAvatar,639,363,27,27);
         author=button("",15);author.setGravity(Gravity.CENTER_VERTICAL);author.setPadding(0,0,0,0);author.setBackgroundColor(0x00000000);
+        author.setSingleLine(true);author.setEllipsize(android.text.TextUtils.TruncateAt.END);
         author.setOnClickListener(view->action(R.id.action_channel));place(side,author,675,365,245,30);
         subscription=button(getString(R.string.action_subscribe),15);subscription.setGravity(Gravity.CENTER_VERTICAL);subscription.setPadding(dp(16),0,dp(12),0);
         Drawable plus=androidx.core.graphics.drawable.DrawableCompat.wrap(androidx.core.content.ContextCompat.getDrawable(requireContext(),R.drawable.personal_shorts_plus)).mutate();
@@ -149,12 +150,20 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
     private void renderSide(){
         if(side==null||shownVideo==null)return;
         title.setText(shownVideo.getTitleFull());
-        author.setText(shownVideo.author!=null?shownVideo.author:shownVideo.getAuthor());
+        author.setText(authorLabel(shownVideo));
         author.setVisibility(author.getText().length()==0?View.GONE:View.VISIBLE);
         subscription.setText(getButtonState(R.id.action_subscribe)==PlayerUI.BUTTON_ON?R.string.personal_channel_subscribed:R.string.action_subscribe);
         like.setSelected(getButtonState(R.id.action_thumbs_up)==PlayerUI.BUTTON_ON);
         likeCount.setText(shownVideo.likeCount);likeCount.setVisibility(shownVideo.likeCount==null?View.GONE:View.VISIBLE);
         if(channelIcon!=null)Glide.with(authorAvatar).load(channelIcon).circleCrop().into(authorAvatar);else Glide.with(authorAvatar).clear(authorAvatar);
+    }
+    private static String authorLabel(Video video){
+        // The current service supplies display name and a real handle in separate bullet
+        // components. Prefer that supplied handle; never derive one from a channel name/ID.
+        if(video.author!=null)for(String part:video.author.split(Video.TERTIARY_TEXT_DELIM)){
+            String value=part.trim();if(value.startsWith("@"))return value;
+        }
+        return video.getAuthor();
     }
     private void buildRail(){
         rail=new FrameLayout(requireContext());rail.setBackgroundColor(0x880F0F0F);place(wrapper,rail,0,0,267,-1);
@@ -182,19 +191,24 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
         addNavigation(items,getString(R.string.header_sports),R.drawable.icon_sports,()->leaveForSection(MediaGroup.TYPE_SPORTS));
         TextView advanced=addNavigation(items,getString(R.string.personal_navigation_advanced),android.R.drawable.ic_menu_more,()->leaveForSection(-1));
         advanced.setOnFocusChangeListener(null);
-        TextView settings=button(getString(R.string.header_settings),15);settings.setOnClickListener(view->leaveForSection(MediaGroup.TYPE_SETTINGS));place(rail,settings,16.5f,472.5f,222,39);
+        TextView settings=navigationRow(getString(R.string.header_settings),R.drawable.icon_settings,()->leaveForSection(MediaGroup.TYPE_SETTINGS));place(rail,settings,16.5f,472.5f,222,39);
         settings.setOnFocusChangeListener((view,focused)->{if(focused&&!initialRailFocus&&isResumed())leaveForSection(MediaGroup.TYPE_SETTINGS);});
         advanced.setOnKeyListener((v,key,event)->{if(key==KeyEvent.KEYCODE_DPAD_DOWN&&event.getAction()==KeyEvent.ACTION_DOWN){settings.requestFocus();return true;}return false;});
         settings.setOnKeyListener((v,key,event)->{if(key==KeyEvent.KEYCODE_DPAD_UP&&event.getAction()==KeyEvent.ACTION_DOWN){advanced.requestFocus();return true;}return false;});
     }
     private TextView addNavigation(LinearLayout parent,String label,int icon,Runnable click){
-        TextView item=button(label,15);item.setGravity(Gravity.CENTER_VERTICAL);item.setPadding(dp(10.5f),0,dp(12),0);
-        Drawable drawable=androidx.core.content.ContextCompat.getDrawable(requireContext(),icon);
-        if(drawable!=null){drawable=androidx.core.graphics.drawable.DrawableCompat.wrap(drawable).mutate();androidx.core.graphics.drawable.DrawableCompat.setTintList(drawable,focusText());drawable.setBounds(0,0,dp(24),dp(24));item.setCompoundDrawables(drawable,null,null,null);item.setCompoundDrawablePadding(dp(10.5f));}
-        item.setOnClickListener(view->click.run());
+        TextView item=navigationRow(label,icon,click);
         // Match official focus activation without creating a second BrowsePresenter view.
         item.setOnFocusChangeListener((view,focused)->{if(focused&&!initialRailFocus&&item!=shortsNavigation&&railShown&&isResumed())click.run();});
         parent.addView(item,new LinearLayout.LayoutParams(-1,dp(39)));return item;
+    }
+    private TextView navigationRow(String label,int icon,Runnable click){
+        TextView item=button(label,15);item.setBackground(buttonBackground(9));item.setGravity(Gravity.CENTER_VERTICAL);item.setPadding(dp(10.5f),0,dp(12),0);
+        item.setSingleLine(true);item.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        Drawable drawable=androidx.core.content.ContextCompat.getDrawable(requireContext(),icon);
+        if(drawable!=null){drawable=androidx.core.graphics.drawable.DrawableCompat.wrap(drawable).mutate();androidx.core.graphics.drawable.DrawableCompat.setTintList(drawable,focusText());drawable.setBounds(0,0,dp(24),dp(24));item.setCompoundDrawables(drawable,null,null,null);item.setCompoundDrawablePadding(dp(10.5f));}
+        item.setOnClickListener(view->click.run());
+        return item;
     }
     private void showRail(boolean show){railShown=show;applyPresentation();if(show)shortsNavigation.requestFocus();else feed.requestFocus();}
     @Override public void onAccountChanged(Account account){
