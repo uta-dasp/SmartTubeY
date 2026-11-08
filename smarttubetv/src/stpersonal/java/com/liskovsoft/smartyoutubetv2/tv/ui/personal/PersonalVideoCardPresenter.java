@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
+import android.text.SpannableStringBuilder;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.View;
@@ -56,13 +57,19 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
             title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             title.setIncludeFontPadding(false);
-            title.setPadding(0, dp(context, 12), 0, 0);
+            title.setMinLines(1);
+            title.setMaxLines(2);
+            title.setLineSpacing(dp(context, 2.5f), 1);
+            title.setPadding(0, dp(context, 13.5f), 0, 0);
         }
         TextView subtitle = card.findViewById(R.id.content_text);
         if (subtitle != null) {
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
             subtitle.setIncludeFontPadding(false);
+            subtitle.setMinLines(1);
+            subtitle.setMaxLines(2);
+            subtitle.setLineSpacing(dp(context, 4), 1);
             subtitle.setPadding(0, dp(context, 4), 0, 0);
         }
         return holder;
@@ -73,6 +80,8 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
         super.onBindViewHolder(holder, item);
         ComplexImageCardView card = (ComplexImageCardView) holder.view;
         Video video = (Video) item;
+        TextView subtitle = card.findViewById(R.id.content_text);
+        if (subtitle != null) subtitle.setText(formatMetadata(video));
         boolean large = isLargeCard(video);
         card.setMainImageDimensions(dp(card.getContext(), large ? 360 : 264),
                 dp(card.getContext(), large ? 202.5f : 148.5f));
@@ -85,6 +94,26 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
 
     protected boolean isLargeCard(Video video) {
         return video.getGroup() == null || video.getGroup().getPosition() <= 0;
+    }
+
+    @Override
+    protected int getContentTextColor(Context context, boolean selected, int defaultColor) {
+        return 0xFFAAAAAA;
+    }
+
+    private static CharSequence formatMetadata(Video video) {
+        CharSequence metadata = video.getSecondTitle();
+        if (metadata == null || video.author == null) return metadata;
+        String author = video.getAuthor();
+        String text = metadata.toString();
+        int separator = text.indexOf('\u2022');
+        if (author == null || author.isEmpty() || !text.startsWith(author) || separator <= 0) return metadata;
+        int authorEnd = separator;
+        while (authorEnd > 0 && Character.isWhitespace(text.charAt(authorEnd - 1))) authorEnd--;
+        int detailsStart = separator + 1;
+        while (detailsStart < text.length() && Character.isWhitespace(text.charAt(detailsStart))) detailsStart++;
+        return new SpannableStringBuilder().append(metadata, 0, authorEnd).append('\n')
+                .append(metadata, detailsStart, metadata.length());
     }
 
     private static GradientDrawable shape(Context context, int color, boolean focused) {

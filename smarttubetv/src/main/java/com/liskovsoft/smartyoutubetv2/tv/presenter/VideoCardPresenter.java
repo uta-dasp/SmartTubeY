@@ -112,8 +112,12 @@ public class VideoCardPresenter extends LongClickPresenter {
         }
         TextView contentText = view.findViewById(R.id.content_text);
         if (contentText != null) {
-            contentText.setTextColor(textColor);
+            contentText.setTextColor(getContentTextColor(view.getContext(), selected, textColor));
         }
+    }
+
+    protected int getContentTextColor(Context context, boolean selected, int defaultColor) {
+        return defaultColor;
     }
 
     @Override
