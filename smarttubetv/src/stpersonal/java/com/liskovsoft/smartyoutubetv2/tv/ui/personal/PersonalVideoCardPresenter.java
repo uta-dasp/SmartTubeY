@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.leanback.widget.Presenter;
+import androidx.leanback.widget.BaseCardView;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.tv.R;
@@ -42,6 +43,9 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
         Presenter.ViewHolder holder = super.onCreateViewHolder(parent);
         ComplexImageCardView card = (ComplexImageCardView) holder.view;
         Context context = parent.getContext();
+        // Bare recycled grids do not receive Leanback RowPresenter activation.
+        // Titles and metadata belong below every thumbnail, including unfocused cards.
+        card.setInfoVisibility(BaseCardView.CARD_REGION_VISIBLE_ALWAYS);
         card.setBackgroundColor(Color.TRANSPARENT);
         card.setClipChildren(false);
         card.setClipToPadding(false);
