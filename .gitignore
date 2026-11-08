@@ -49,6 +49,7 @@ android.keystore
 android-upd2.keystore
 keystore.properties
 *.jks
+*.p12
 *.keystore
 /private-signing/
 build.log
