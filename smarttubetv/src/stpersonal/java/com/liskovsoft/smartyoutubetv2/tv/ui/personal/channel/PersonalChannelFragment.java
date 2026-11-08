@@ -44,6 +44,11 @@ import androidx.leanback.widget.RowHeaderPresenter;
 import androidx.leanback.widget.RowPresenter;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.HttpException;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
@@ -70,9 +75,11 @@ import io.reactivex.schedulers.Schedulers;
 
 /** Native channel hero around the original ChannelPresenter shelves, menus and continuation flow. */
 public class PersonalChannelFragment extends ChannelFragment implements MediaServiceManager.AccountChangeListener {
+    private static final String BANNER_TAG="STYChannelBanner";
     private final HeroRow hero=new HeroRow();
     private FrameLayout wrapper;
     private ImageView banner;
+    private View rowsView;
     private EditText search;
     private TextView microphone,empty;
     private HeroHolder heroHolder;
@@ -97,6 +104,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
 
     @Override public View onCreateView(@NonNull LayoutInflater inflater,@Nullable ViewGroup parent,@Nullable Bundle state){
         View rows=super.onCreateView(inflater,parent,state);
+        rowsView=rows;
         wrapper=new FrameLayout(requireContext());wrapper.setBackgroundColor(0xFF0F0F0F);
         banner=new ImageView(requireContext());banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
         wrapper.addView(banner,new FrameLayout.LayoutParams(-1,-1));
@@ -137,7 +145,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
             @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder holder,int position,int subposition){
                 boolean next=position>0;if(next==collapsed)return;collapsed=next;
                 // Official TV collapses the hero on entering shelves; channel search remains fixed.
-                view.post(()->{if(wrapper!=null){setAlignment(collapsed?dp(130.5f):0);banner.setAlpha(collapsed?0:1);if(heroHolder!=null)heroHolder.view.setAlpha(collapsed?0:1);}});
+                view.post(()->{if(wrapper!=null){setAlignment(collapsed?dp(130.5f):0);banner.setAlpha(collapsed?0:1);if(heroHolder!=null)heroHolder.view.setAlpha(collapsed?0:1);logBannerState("selection");}});
             }
         });
         getVerticalGridView().setOnKeyInterceptListener(event->{
@@ -209,7 +217,44 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
         }});
     }
 
-    private void loadBanner(){if(banner!=null){if(details!=null&&details.bannerUrl!=null)Glide.with(banner).load(details.bannerUrl).centerCrop().into(banner);else Glide.with(banner).clear(banner);}}
+    private void loadBanner(){
+        if(banner==null)return;
+        if(details==null||details.bannerUrl==null){
+            Glide.with(banner).clear(banner);android.util.Log.i(BANNER_TAG,"image_clear metadata_banner=false");return;
+        }
+        final ImageView requestedView=banner;final int requestedGeneration=generation;
+        logBannerState("image_request");
+        Glide.with(requestedView).load(details.bannerUrl).centerCrop().listener(new RequestListener<Drawable>(){
+            @Override public boolean onLoadFailed(@Nullable GlideException error,Object model,Target<Drawable> target,boolean first){
+                if(banner!=requestedView||requestedGeneration!=generation)return false;
+                // Never log Glide's model, exception message, request URL, headers or stack trace.
+                if(error==null)android.util.Log.w(BANNER_TAG,"image_failed cause=unknown");
+                else if(error.getRootCauses().isEmpty())android.util.Log.w(BANNER_TAG,"image_failed cause="+error.getClass().getSimpleName());
+                else for(Throwable cause:error.getRootCauses()){
+                    String status=cause instanceof HttpException?" status="+((HttpException)cause).getStatusCode():"";
+                    android.util.Log.w(BANNER_TAG,"image_failed cause="+cause.getClass().getSimpleName()+status);
+                }
+                logBannerState("image_failed");return false;
+            }
+            @Override public boolean onResourceReady(Drawable resource,Object model,Target<Drawable> target,DataSource source,boolean first){
+                if(banner==requestedView&&requestedGeneration==generation){
+                    android.util.Log.i(BANNER_TAG,"image_ready width="+resource.getIntrinsicWidth()+" height="+resource.getIntrinsicHeight());
+                    // Glide assigns the drawable after this callback; inspect the next UI turn.
+                    requestedView.post(()->{if(banner==requestedView&&requestedGeneration==generation)logBannerState("image_bound");});
+                }
+                return false;
+            }
+        }).into(requestedView);
+    }
+
+    private void logBannerState(String event){
+        if(banner==null)return;
+        Drawable rowsBackground=rowsView==null?null:rowsView.getBackground();
+        android.util.Log.i(BANNER_TAG,event+" view="+banner.getWidth()+"x"+banner.getHeight()+
+                " visibility="+banner.getVisibility()+" shown="+banner.isShown()+" alpha="+banner.getAlpha()+
+                " drawable="+(banner.getDrawable()!=null)+" collapsed="+collapsed+" row="+getSelectedPosition()+
+                " rows_background="+(rowsBackground!=null)+" rows_opacity="+(rowsBackground==null?0:rowsBackground.getOpacity()));
+    }
 
     private void renderHero(){
         if(heroHolder==null)return;HeroHolder holder=heroHolder;Video seed=presenter().getChannel();
@@ -302,7 +347,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
     @Override public void onDestroyView(){
         generation++;dispose(detailsRequest);dispose(stateRequest);dispose(subscriptionRequest);dispose(uploadsRequest);voice.stop();
         MediaServiceManager.instance().removeAccountListener(this);if(banner!=null)Glide.with(banner).clear(banner);
-        wrapper=null;banner=null;search=null;microphone=null;empty=null;heroHolder=null;requestedChannel=null;super.onDestroyView();
+        wrapper=null;banner=null;rowsView=null;search=null;microphone=null;empty=null;heroHolder=null;requestedChannel=null;super.onDestroyView();
     }
     private void hideKeyboard(){if(search!=null){InputMethodManager manager=(InputMethodManager)requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);if(manager!=null)manager.hideSoftInputFromWindow(search.getWindowToken(),0);if(Build.VERSION.SDK_INT>=21)search.setShowSoftInputOnFocus(false);}}
     private boolean current(int token){return token==generation&&wrapper!=null&&isAdded()&&requestedChannel!=null&&requestedChannel.equals(presenter().getChannelId());}

@@ -28,6 +28,7 @@ import org.json.JSONObject;
 /** Display fields from the current public channel browse response; no reference artwork is bundled. */
 final class PersonalChannelMetadata {
     private static final String TAG = "PersonalChannelMetadata";
+    private static final String BANNER_TAG = "STYChannelBanner";
     private static final int MAX_RESPONSE_BYTES = 1048576;
     String channelId,title,handle,description,avatarUrl,bannerUrl,subscribers,statisticsText;
 
@@ -47,6 +48,7 @@ final class PersonalChannelMetadata {
                 JSONObject response=request("browse","metadata,header",
                         "\"browseId\":"+JSONObject.quote(canonicalId),active,emitter);
                 PersonalChannelMetadata result=parseBrowse(response,canonicalId);
+                android.util.Log.i(BANNER_TAG,"metadata_ready banner="+(result.bannerUrl!=null));
                 Log.d(TAG,"Public channel fields: title=%s handle=%s description=%s banner=%s",
                         result.title!=null,result.handle!=null,result.description!=null,result.bannerUrl!=null);
                 if(!emitter.isDisposed()){emitter.onNext(result);emitter.onComplete();}
@@ -55,6 +57,7 @@ final class PersonalChannelMetadata {
                     // Never include exception messages, request URLs, headers, bodies or credentials.
                     String reason=error instanceof MetadataFailure?((MetadataFailure)error).reason:error.getClass().getSimpleName();
                     Log.w(TAG,"Public channel metadata unavailable: %s",reason);
+                    android.util.Log.w(BANNER_TAG,"metadata_failed cause="+error.getClass().getSimpleName());
                     emitter.tryOnError(new IllegalStateException("Channel metadata unavailable"));
                 }
             } finally { Call call=active.getAndSet(null); if(call!=null)call.cancel(); }
@@ -72,6 +75,7 @@ final class PersonalChannelMetadata {
         if(emitter.isDisposed()){call.cancel();throw new MetadataFailure("cancelled");}
         try(Response response=call.execute()) {
             Log.d(TAG,"Public channel metadata HTTP status=%s",response.code());
+            android.util.Log.i(BANNER_TAG,"metadata_http status="+response.code());
             if(!response.isSuccessful())throw new MetadataFailure("http_"+response.code());
             ResponseBody body=response.body();
             if(body==null)throw new MetadataFailure("empty_response");
