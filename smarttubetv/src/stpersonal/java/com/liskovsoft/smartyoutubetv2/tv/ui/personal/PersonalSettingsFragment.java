@@ -72,8 +72,9 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
                 return super.onRequestFocusInDescendants(direction, previous);
             }
         };
-        root.setClipChildren(false);
-        root.setClipToPadding(false);
+        // Each ScrollView must stop drawing at its own viewport while it scrolls.
+        root.setClipChildren(true);
+        root.setClipToPadding(true);
         root.setBackgroundColor(0xFF0F0F0F);
         TextView title = text(getString(R.string.header_settings), 23, true);
         FrameLayout.LayoutParams titleParams = new FrameLayout.LayoutParams(-2, dp(42));

@@ -8,11 +8,17 @@ credentials from the installed Google YouTube application.
 
 ## Settings
 
-The page retains the expanded navigation rail, a scrolling category list, and a detail pane.
+The page uses a scrolling category list and detail pane. The navigation rail expands when
+focused and collapses when Settings content receives focus. Down on the pinned Settings
+rail row stays on that row. The Settings root clips its ScrollView children to their own
+viewports so scrolled rows cannot paint over the fixed page heading.
 At density 2 / 1920 x 1080, the intended category left edge is 525 px, its width is 420 px,
 the divider is 967 px, and the detail pane begins at 998 px. The pane retains the browse
 host's translated virtual width: the captured expanded-rail reference also shifts the right
-details partly off-screen. The host must hide its generic browse header and set content
+details partly off-screen while the rail is focused; content focus removes the 378 px rail
+translation. Expected collapsed positions are x165 for category labels and x589 for the divider.
+The host
+must hide its generic browse header and set content
 top margin to zero for `MediaGroup.TYPE_SETTINGS`.
 
 `SettingsGroup.getItems()` supplies the entire category list in source order. No category

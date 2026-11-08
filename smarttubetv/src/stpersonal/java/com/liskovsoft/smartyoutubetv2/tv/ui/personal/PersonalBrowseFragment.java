@@ -681,7 +681,6 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     }
 
     private void setExpanded(boolean value) {
-        if (selectedSection == MediaGroup.TYPE_SETTINGS) value = true;
         if (expanded == value || rail == null) return;
         expanded = value;
         applyRailWidth();
@@ -760,6 +759,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         if (event.getAction() != KeyEvent.ACTION_DOWN || root == null) return false;
         View focus = root.findFocus();
         if (isInside(focus, rail)) {
+            // Settings is the pinned last rail row; Down must not jump into its content.
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && focus == settingsButton) return true;
             // The pinned Settings row must remain reachable without walking closed extras.
             if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && focus == lastVisibleNavigationItem() && settingsButton != null) {
                 settingsButton.requestFocus();
