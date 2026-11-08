@@ -18,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.ChatPreference;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.CommentsPreference;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.StringListPreference;
+import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.OptionListPreference;
 
 import java.util.HashSet;
 import java.util.List;
@@ -212,7 +213,12 @@ public class AppPreferenceManager {
     }
 
     public Preference createRadioListPreference(OptionCategory category) {
-        ListPreference pref = new ListPreference(mContext);
+        boolean hasSubmenu = false;
+        for (OptionItem option : category.options) {
+            if (option instanceof UiOptionItem.Submenu) { hasSubmenu = true; break; }
+        }
+        ListPreference pref = hasSubmenu ? new OptionListPreference(mContext, category.options, this)
+                : new ListPreference(mContext);
 
         initSingleSelectListPreference(category, pref);
 
@@ -240,6 +246,7 @@ public class AppPreferenceManager {
             for (OptionItem optionItem : category.options) {
                 if (newValue.equals(optionItem.toString())) {
                     optionItem.onSelect(true);
+                    if (optionItem instanceof UiOptionItem.Submenu) return false;
                     break;
                 }
             }

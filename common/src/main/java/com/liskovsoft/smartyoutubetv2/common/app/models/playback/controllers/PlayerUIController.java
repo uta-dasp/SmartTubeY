@@ -25,6 +25,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerC
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CaptionOptions;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
@@ -188,6 +189,10 @@ public class PlayerUIController extends BasePlayerController {
 
     /** Opens the real subtitle tracks together, while the long action retains all subtitle settings. */
     public boolean showBasicSubtitleDialog(CharSequence title, String disabledTitle) {
+        return showBasicSubtitleDialog(title, disabledTitle, null);
+    }
+
+    public boolean showBasicSubtitleDialog(CharSequence title, String disabledTitle, CharSequence autoTranslateTitle) {
         if (getPlayer() == null) {
             return false;
         }
@@ -196,15 +201,55 @@ public class PlayerUIController extends BasePlayerController {
             return false;
         }
 
+        VideoLoaderController loader = getController(VideoLoaderController.class);
+        CaptionOptions.Partition choices = CaptionOptions.partition(formats,
+                autoTranslateTitle != null && loader != null ? loader.getSourceCaptionLanguages() : null);
         // Reordering preferred languages must not mutate the engine's track list.
-        List<FormatItem> choices = new ArrayList<>(formats);
-        reorderSubtitles(choices);
+        reorderSubtitles(choices.primary);
+        reorderSubtitles(choices.translated);
+        List<OptionItem> options = createBasicSubtitleOptions(choices.primary, disabledTitle);
+        if (!choices.translated.isEmpty()) {
+            options.add(new UiOptionItem.Submenu() {
+                @Override public CharSequence getTitle() { return autoTranslateTitle + " ›"; }
+                @Override public CharSequence getDescription() {
+                    for (FormatItem format : choices.translated) {
+                        if (getPlayer() != null && CaptionOptions.isCurrent(format, getPlayer().getSubtitleFormat())) {
+                            return CaptionOptions.label(format);
+                        }
+                    }
+                    return null;
+                }
+                @Override public void onSelect(boolean selected) {
+                    AppDialogPresenter presenter = getAppDialogPresenter();
+                    presenter.appendRadioCategory(autoTranslateTitle,
+                            createBasicSubtitleOptions(choices.translated, disabledTitle));
+                    presenter.showDialog(autoTranslateTitle, mSetSubtitleButtonState);
+                }
+            });
+        }
         AppDialogPresenter settingsPresenter = getAppDialogPresenter();
         fitVideoIntoDialog();
-        settingsPresenter.appendRadioCategory(title,
-                UiOptionItem.from(choices, this::selectSubtitleOption, disabledTitle));
+        settingsPresenter.appendRadioCategory(title, options);
         settingsPresenter.showDialog(title, mSetSubtitleButtonState);
         return true;
+    }
+
+    private List<OptionItem> createBasicSubtitleOptions(List<FormatItem> formats, String disabledTitle) {
+        List<OptionItem> result = new ArrayList<>();
+        for (FormatItem format : formats) {
+            OptionItem original = UiOptionItem.from(format, this::selectSubtitleOption, disabledTitle);
+            result.add(new UiOptionItem() {
+                @Override public CharSequence getTitle() {
+                    return format.isDefault() ? original.getTitle() : CaptionOptions.label(format);
+                }
+                @Override public boolean isSelected() {
+                    return CaptionOptions.isCurrent(format, getPlayer() != null ? getPlayer().getSubtitleFormat() : null);
+                }
+                @Override public void onSelect(boolean selected) { original.onSelect(selected); }
+                @Override public Object getData() { return format; }
+            });
+        }
+        return result;
     }
 
     private void selectSubtitleOption(OptionItem option) {

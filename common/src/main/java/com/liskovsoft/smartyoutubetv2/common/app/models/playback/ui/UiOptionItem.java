@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Set;
 
 public class UiOptionItem implements OptionItem {
+    /** A list row which opens another panel without becoming a selected radio value. */
+    public abstract static class Submenu extends UiOptionItem { }
+
     /** A description read from current state when its preference is rebound or resumed. */
     public abstract static class DynamicDescription extends UiOptionItem {
         private final Set<Runnable> mDescriptionListeners = new HashSet<>();

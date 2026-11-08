@@ -7,6 +7,7 @@
     <string name="personal_player_description">Description</string>
     <string name="personal_player_quality">Quality</string>
     <string name="personal_player_captions">Captions</string>
+    <string name="personal_player_auto_translate">Auto-translate</string>
     <string name="personal_player_audio">Audio</string>
     <string name="personal_player_speed">Speed</string>
     <string name="personal_player_repeat">Repeat</string>

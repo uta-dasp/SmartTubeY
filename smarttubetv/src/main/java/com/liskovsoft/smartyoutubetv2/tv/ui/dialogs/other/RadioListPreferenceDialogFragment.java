@@ -14,6 +14,7 @@ import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 public class RadioListPreferenceDialogFragment extends LeanbackListPreferenceDialogFragment {
     private boolean mIsTransparent;
+    private int mSubmenuReturnPosition = -1;
 
     @Override
     public Adapter<ViewHolder> onCreateAdapter() {
@@ -37,6 +38,13 @@ public class RadioListPreferenceDialogFragment extends LeanbackListPreferenceDia
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        if (getPreference() instanceof OptionListPreference) {
+            OptionListPreference preference = (OptionListPreference) getPreference();
+            preference.refreshOptions();
+            mEntries = preference.getEntries();
+            mEntryValues = preference.getEntryValues();
+            mInitialSelection = preference.getValue();
+        }
         View view = super.onCreateView(inflater, container, savedInstanceState);
 
         if (view != null) {
@@ -46,7 +54,8 @@ public class RadioListPreferenceDialogFragment extends LeanbackListPreferenceDia
 
             VerticalGridView verticalGridView = view.findViewById(android.R.id.list);
             if (verticalGridView != null) {
-                verticalGridView.scrollToPosition(findSelectedPosition());
+                verticalGridView.scrollToPosition(mSubmenuReturnPosition >= 0
+                        ? mSubmenuReturnPosition : findSelectedPosition());
             }
         }
 
@@ -80,6 +89,16 @@ public class RadioListPreferenceDialogFragment extends LeanbackListPreferenceDia
         }
 
         @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            super.onBindViewHolder(holder, position);
+            boolean submenu = getPreference() instanceof OptionListPreference &&
+                    ((OptionListPreference) getPreference()).isSubmenu(position);
+            if (holder.getWidgetView() instanceof View) {
+                ((View) holder.getWidgetView()).setVisibility(submenu ? View.INVISIBLE : View.VISIBLE);
+            }
+        }
+
+        @Override
         public void onItemClick(ViewHolder viewHolder) {
             final int index = viewHolder.getAdapterPosition();
             if (index == RecyclerView.NO_POSITION) {
@@ -88,6 +107,9 @@ public class RadioListPreferenceDialogFragment extends LeanbackListPreferenceDia
             final CharSequence entry = mEntryValues[index];
             final ListPreference preference = (ListPreference) getPreference();
             if (index >= 0 && preference != null) {
+                if (preference instanceof OptionListPreference && ((OptionListPreference) preference).isSubmenu(index)) {
+                    mSubmenuReturnPosition = index;
+                }
                 String value = mEntryValues[index].toString();
                 if (preference.callChangeListener(value)) {
                     preference.setValue(value);

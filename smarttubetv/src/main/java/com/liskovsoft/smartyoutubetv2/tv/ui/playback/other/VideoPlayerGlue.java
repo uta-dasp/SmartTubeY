@@ -28,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.HQDialogController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.PlayerUIController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CaptionOptions;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.tv.R;
@@ -354,7 +355,8 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         PlayerUIController controller = PlaybackPresenter.instance(getContext()).getController(PlayerUIController.class);
         return controller != null && controller.showBasicSubtitleDialog(
                 getContext().getString(R.string.personal_player_captions),
-                getContext().getString(R.string.personal_player_off));
+                getContext().getString(R.string.personal_player_off),
+                getContext().getString(R.string.personal_player_auto_translate));
     }
 
     private boolean showPersonalFormatDialog(int title) {
@@ -375,7 +377,8 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         }
         if (player != null && (title == R.string.personal_player_captions || title == R.string.personal_player_audio)) {
             FormatItem format = title == R.string.personal_player_captions ? player.getSubtitleFormat() : player.getAudioFormat();
-            return format == null || format.isDefault() ? getContext().getString(R.string.personal_player_off) : format.getTitle();
+            return format == null || format.isDefault() ? getContext().getString(R.string.personal_player_off)
+                    : title == R.string.personal_player_captions ? CaptionOptions.label(format) : format.getTitle();
         }
         return action instanceof TwoStateAction ? getContext().getString(getActionIndex(action) == TwoStateAction.INDEX_OFF
                 ? R.string.personal_player_off : R.string.personal_player_on) : action.getLabel1();

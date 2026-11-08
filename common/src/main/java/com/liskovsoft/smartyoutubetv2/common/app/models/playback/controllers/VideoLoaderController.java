@@ -18,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CaptionOptions;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
@@ -27,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import io.reactivex.disposables.Disposable;
+import java.util.Set;
 
 public class VideoLoaderController extends BasePlayerController {
     private static final String TAG = VideoLoaderController.class.getSimpleName();
@@ -36,6 +38,9 @@ public class VideoLoaderController extends BasePlayerController {
     private SuggestionsController mSuggestionsController;
     private ErrorFixerController mErrorFixerController;
     private Disposable mFormatInfoAction;
+    private Set<String> mSourceCaptionLanguages;
+    private String mCaptionMetadataVideoId;
+    private long mCaptionMetadataGeneration;
     private final Runnable mReloadVideo = () -> {
         getMainController().onNewVideo(getVideo());
     };
@@ -73,6 +78,7 @@ public class VideoLoaderController extends BasePlayerController {
 
     @Override
     public void onNewVideo(Video item) {
+        clearCaptionMetadata();
         if (item == null) {
             return;
         }
@@ -106,7 +112,29 @@ public class VideoLoaderController extends BasePlayerController {
 
     @Override
     public void onEngineReleased() {
+        clearCaptionMetadata();
         disposeActions();
+    }
+
+    @Override
+    public void onFinish() {
+        clearCaptionMetadata();
+    }
+
+    @Override
+    public void onViewDestroyed() {
+        clearCaptionMetadata();
+    }
+
+    public Set<String> getSourceCaptionLanguages() {
+        return getVideo() != null && Helpers.equals(mCaptionMetadataVideoId, getVideo().videoId)
+                ? mSourceCaptionLanguages : null;
+    }
+
+    private void clearCaptionMetadata() {
+        mCaptionMetadataGeneration++;
+        mSourceCaptionLanguages = null;
+        mCaptionMetadataVideoId = null;
     }
 
     @Override
@@ -257,8 +285,24 @@ public class VideoLoaderController extends BasePlayerController {
 
         ServiceManager service = YouTubeServiceManager.instance();
         MediaItemService mediaItemManager = service.getMediaItemService();
+        clearCaptionMetadata();
+        final long captionGeneration = mCaptionMetadataGeneration;
+        final String requestedVideoId = video.videoId;
         mFormatInfoAction = mediaItemManager.getFormatInfoObserve(video.videoId)
-                .subscribe(this::processFormatInfo,
+                .subscribe(formatInfo -> {
+                    if (captionGeneration == mCaptionMetadataGeneration && getVideo() != null &&
+                            Helpers.equals(requestedVideoId, getVideo().videoId) &&
+                            (formatInfo.getVideoId() == null || Helpers.equals(requestedVideoId, formatInfo.getVideoId()))) {
+                        try {
+                            mSourceCaptionLanguages = CaptionOptions.sourceLanguages(formatInfo.getSubtitles());
+                        } catch (RuntimeException unavailableCaptionMetadata) {
+                            // Optional presentation metadata must never interrupt normal source opening.
+                            mSourceCaptionLanguages = null;
+                        }
+                        mCaptionMetadataVideoId = requestedVideoId;
+                    }
+                    processFormatInfo(formatInfo);
+                },
                            error -> {
                                getPlayer().showProgressBar(false);
                                mErrorFixerController.runFormatErrorAction(error);
