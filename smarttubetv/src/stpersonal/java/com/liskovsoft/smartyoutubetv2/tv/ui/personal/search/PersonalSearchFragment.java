@@ -321,6 +321,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
         for(int i=0;i<3;i++) {
             final int column=i;
             TextView action=key(getString(labels[i]),12,handlers[i]);
+            action.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
             action.setBackground(focusBackground(6,FILL));
             actions[i]=action;place(keyboard,action,7.5f+i*72,132,66,27);
             action.setOnKeyListener((view,key,event) -> {
@@ -381,7 +382,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
         FrameLayout.LayoutParams field=(FrameLayout.LayoutParams)input.getLayoutParams();
         field.width=dp(editing?516:315);input.setLayoutParams(field);
         FrameLayout.LayoutParams shelves=(FrameLayout.LayoutParams)resultsContainer.getLayoutParams();
-        shelves.topMargin=dp(editing?271:101);resultsContainer.setLayoutParams(shelves);
+        shelves.topMargin=dp(editing?271:103);resultsContainer.setLayoutParams(shelves);
         resultsContainer.setVisibility(!editing||TextUtils.isEmpty(getSearchText())?View.VISIBLE:View.GONE);
         status.setVisibility(!editing&&!loading&&!hasResults()?View.VISIBLE:View.GONE);
     }

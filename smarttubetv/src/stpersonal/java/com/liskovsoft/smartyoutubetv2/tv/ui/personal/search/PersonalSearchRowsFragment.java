@@ -34,12 +34,11 @@ public class PersonalSearchRowsFragment extends RowsSupportFragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
-        setAlignment(0);
+        setAlignment(dp(36.5f));
         if (getVerticalGridView() != null) {
             getVerticalGridView().setPadding(0, 0, 0, dp(36));
             getVerticalGridView().setClipToPadding(false);
-            getVerticalGridView().setWindowAlignment(BaseGridView.WINDOW_ALIGN_LOW_EDGE);
-            getVerticalGridView().setWindowAlignmentOffset(0);
+            getVerticalGridView().setWindowAlignment(BaseGridView.WINDOW_ALIGN_NO_EDGE);
             getVerticalGridView().setWindowAlignmentOffsetPercent(BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
         }
     }
