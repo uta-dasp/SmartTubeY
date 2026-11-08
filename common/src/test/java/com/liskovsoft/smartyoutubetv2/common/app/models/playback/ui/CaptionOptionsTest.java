@@ -54,6 +54,28 @@ public class CaptionOptionsTest {
         assertTrue(CaptionOptions.isCurrent(off, off));
     }
 
+    @Test public void childChoiceSurvivesBackBeforeEngineUpdateAndFreshDialogResetsToEngine() {
+        FakeFormat engineFormat = format("1", "English*");
+        FakeFormat chosen = format("2", "Abkhazian*");
+        CaptionOptions.DialogSelection selection = new CaptionOptions.DialogSelection();
+        assertSame(engineFormat, selection.current(engineFormat));
+        int[] calls = {0};
+        OptionItem original = UiOptionItem.from(chosen, option -> {
+            calls[0]++;
+            assertSame(chosen, UiOptionItem.toFormat(option));
+            assertTrue(option.isSelected());
+            assertSame(chosen, selection.current(engineFormat));
+        });
+        selection.select(chosen, original, true);
+        assertEquals(1, calls[0]);
+        assertSame(chosen, selection.current(engineFormat)); // Engine still reports the old track on Back.
+        assertTrue(CaptionOptions.isCurrent(chosen, selection.current(engineFormat)));
+        assertFalse(CaptionOptions.isCurrent(engineFormat, selection.current(engineFormat)));
+        assertEquals("Abkhazian", CaptionOptions.label(selection.current(engineFormat)));
+        assertEquals("English", CaptionOptions.label(engineFormat)); // No actual-stream state is changed here.
+        assertSame(engineFormat, new CaptionOptions.DialogSelection().current(engineFormat));
+    }
+
     private static MediaSubtitle subtitle(String name, String url, String type) {
         return new MediaSubtitle() {
             @Override public String getBaseUrl() { return url; }

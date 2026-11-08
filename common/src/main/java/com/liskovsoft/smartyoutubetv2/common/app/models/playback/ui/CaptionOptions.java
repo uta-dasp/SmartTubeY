@@ -69,6 +69,20 @@ public final class CaptionOptions {
         return SubtitleTrack.isAuto(language) ? language.substring(0, language.length() - 1) : format.getTitle();
     }
 
+    /** Local radio choice for one basic dialog, distinct from the asynchronously applied engine format. */
+    public static final class DialogSelection {
+        private FormatItem mChosen;
+
+        public FormatItem current(FormatItem engineFormat) {
+            return mChosen != null ? mChosen : engineFormat;
+        }
+
+        public void select(FormatItem format, OptionItem original, boolean selected) {
+            if (selected) mChosen = format;
+            original.onSelect(selected);
+        }
+    }
+
     public static final class Partition {
         public final List<FormatItem> primary = new ArrayList<>();
         public final List<FormatItem> translated = new ArrayList<>();

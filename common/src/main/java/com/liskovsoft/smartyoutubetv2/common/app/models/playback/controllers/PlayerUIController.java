@@ -207,13 +207,15 @@ public class PlayerUIController extends BasePlayerController {
         // Reordering preferred languages must not mutate the engine's track list.
         reorderSubtitles(choices.primary);
         reorderSubtitles(choices.translated);
-        List<OptionItem> options = createBasicSubtitleOptions(choices.primary, disabledTitle);
+        CaptionOptions.DialogSelection selection = new CaptionOptions.DialogSelection();
+        List<OptionItem> options = createBasicSubtitleOptions(choices.primary, disabledTitle, selection);
         if (!choices.translated.isEmpty()) {
             options.add(new UiOptionItem.Submenu() {
                 @Override public CharSequence getTitle() { return autoTranslateTitle + " ›"; }
                 @Override public CharSequence getDescription() {
                     for (FormatItem format : choices.translated) {
-                        if (getPlayer() != null && CaptionOptions.isCurrent(format, getPlayer().getSubtitleFormat())) {
+                        if (CaptionOptions.isCurrent(format,
+                                selection.current(getPlayer() != null ? getPlayer().getSubtitleFormat() : null))) {
                             return CaptionOptions.label(format);
                         }
                     }
@@ -222,7 +224,7 @@ public class PlayerUIController extends BasePlayerController {
                 @Override public void onSelect(boolean selected) {
                     AppDialogPresenter presenter = getAppDialogPresenter();
                     presenter.appendRadioCategory(autoTranslateTitle,
-                            createBasicSubtitleOptions(choices.translated, disabledTitle));
+                            createBasicSubtitleOptions(choices.translated, disabledTitle, selection));
                     presenter.showDialog(autoTranslateTitle, mSetSubtitleButtonState);
                 }
             });
@@ -234,7 +236,8 @@ public class PlayerUIController extends BasePlayerController {
         return true;
     }
 
-    private List<OptionItem> createBasicSubtitleOptions(List<FormatItem> formats, String disabledTitle) {
+    private List<OptionItem> createBasicSubtitleOptions(List<FormatItem> formats, String disabledTitle,
+                                                      CaptionOptions.DialogSelection selection) {
         List<OptionItem> result = new ArrayList<>();
         for (FormatItem format : formats) {
             OptionItem original = UiOptionItem.from(format, this::selectSubtitleOption, disabledTitle);
@@ -243,9 +246,10 @@ public class PlayerUIController extends BasePlayerController {
                     return format.isDefault() ? original.getTitle() : CaptionOptions.label(format);
                 }
                 @Override public boolean isSelected() {
-                    return CaptionOptions.isCurrent(format, getPlayer() != null ? getPlayer().getSubtitleFormat() : null);
+                    return CaptionOptions.isCurrent(format,
+                            selection.current(getPlayer() != null ? getPlayer().getSubtitleFormat() : null));
                 }
-                @Override public void onSelect(boolean selected) { original.onSelect(selected); }
+                @Override public void onSelect(boolean selected) { selection.select(format, original, selected); }
                 @Override public Object getData() { return format; }
             });
         }
