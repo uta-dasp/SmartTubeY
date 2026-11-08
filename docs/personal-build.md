@@ -160,15 +160,32 @@ separate from the development APK checks.
 
 ## Produce and verify the final package
 
-After visual and functional QA, use a clean package build to remove incremental
-ZIP slack from development APKs. A full `clean` removes generated project build
-outputs; preserve the known-good rollback APK and its metadata first.
+After visual and functional QA, clean the application module to remove its
+incremental ZIP slack. This preserves completed library builds and cached
+dependencies. Preserve the known-good rollback APK and its metadata first.
+
+The first release compile on the 8 GB Windows host exhausted system resources
+with the upstream 3 GB heap and default parallelism. The following profile
+successfully completed the signed release build. Keep release lint in a separate
+invocation so its analysis starts in a fresh Gradle process:
 
 ```powershell
-& $gradle '--no-daemon' '-Pandroid.builder.sdkDownload=false' `
-    'clean' ':smarttubetv:assembleStpersonalRelease' `
+$releaseMemoryArgs = @(
+    '--max-workers=1',
+    '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8',
+    '-Pkotlin.compiler.execution.strategy=in-process'
+)
+& $gradle @releaseMemoryArgs '--no-daemon' '-Pandroid.builder.sdkDownload=false' `
+    ':smarttubetv:clean' ':smarttubetv:assembleStpersonalRelease' '--console' 'plain'
+& $gradle @releaseMemoryArgs '--no-daemon' '-Pandroid.builder.sdkDownload=false' `
     ':smarttubetv:lintStpersonalRelease' '--console' 'plain'
 ```
+
+If Windows reports insufficient system resources, let that build finish and
+wait for the host to recover. Retry the assemble task with this profile without
+another clean; preserve the successfully completed library work and dependency
+caches. These options apply only to the current command and do not change the
+upstream Gradle properties or global Java settings.
 
 Record the Git and submodule revisions, tool versions, build commands, APK
 SHA-256, and signer-certificate digest. Verify the finished ARMv7 APK:
