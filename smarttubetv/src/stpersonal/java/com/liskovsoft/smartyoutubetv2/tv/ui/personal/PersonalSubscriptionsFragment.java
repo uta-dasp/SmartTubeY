@@ -92,7 +92,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
     private boolean restoreRequested,restoreRight;
     private int restorePosition=-1;
     private final ViewTreeObserver.OnGlobalFocusChangeListener pendingFocusListener=(oldFocus,newFocus)->{
-        if(!pendingVideoFocus||newFocus==null)return;
+        if(rebuildingChannels||!pendingVideoFocus||newFocus==null)return;
         if(newFocus==status)return;
         if(isInside(newFocus,channelGrid)){
             RecyclerView.ViewHolder holder=channelGrid.findContainingViewHolder(newFocus);
@@ -373,7 +373,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         boolean same=entry.video==null?selectedChannel==null:selectedChannel!=null&&entry.key.equals(channelKey(selectedChannel));
         if(same&&(selectedChannel==null||!activeVideos().isEmpty()||channelLoading)){
             pendingVideoFocus|=focusVideos;
-            if(focusVideos&&!activeVideos().isEmpty()){videoGrid.requestFocus();pendingVideoFocus=false;}
+            if(focusVideos&&!activeVideos().isEmpty())focusPendingVideos();
             else if(focusVideos&&status.getVisibility()==View.VISIBLE)status.requestFocus();
             return;
         }
@@ -386,7 +386,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         channelChoices.notifyItemRangeChanged(0,channelChoices.size());
         videoBridge.setAdapter(activeVideos());
         heading.setText(selectedChannel==null?getString(R.string.personal_subscriptions_most_relevant):selectedChannel.getTitle());
-        if(selectedChannel==null){channelLoading=false;renderStatus();if(focusVideos&&allVideos.size()>0)videoGrid.requestFocus();tryRestore();return;}
+        if(selectedChannel==null){channelLoading=false;renderStatus();if(focusVideos)focusPendingVideos();tryRestore();return;}
         channelVideos.clear();channelLoading=true;renderStatus();
         final int generation=channelGeneration;final Video channel=selectedChannel;
         pendingChannelLoad=()->{
