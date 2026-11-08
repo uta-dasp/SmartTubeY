@@ -79,15 +79,20 @@ accounts leaves the current search results in place.
 
 ## Validation and remaining gaps
 
-This change received source/API review, Java 8 syntax parsing, XML parsing, string-reference checks, and whitespace
-checks. No Gradle build or device test ran in this isolated worktree; the integration owner
-performs those checks. Settings full-page placement requires the separately coordinated
-personal browse content-mode change.
+Integrated debug assemble and lint passed at `f8a15d7` on 2026-11-08 (0 lint
+errors, 305 retained warnings, no new issues), and its TV upgrade retained the
+signed-in account. Earlier integrated debug sessions verified normal sign-in,
+saved-account state and real subscribed-channel/feed data. The 31-assertion
+physical-TV navigation smoke passed, including account chooser cancellation,
+Settings category/options focus, opening the original Accounts manager and Back
+restoration. It did not mutate account settings. Settings full-page content mode
+is integrated. Final signed-release QA remains pending.
 
 The native shell approximates the measured reference geometry. Category options continue
 to open the existing functional presenter dialogs rather than reproducing the official
 application's complete inline option layout. Typography uses Android fonts, the management
 glyph uses the system font, and the backdrop is an original gradient drawing. Exact focus
-motion, carousel scrolling, edge clipping, and restoration after sign-in/manage need TV
-validation. Saved-account avatars, account switching, account passwords, and profile-specific
-state require a normal user sign-in for end-to-end tests; the current app is anonymous.
+motion, long-carousel scrolling, edge clipping, and restoration after sign-in/manage
+still need complete TV coverage. Multiple/protected account switching, account
+passwords, profile-specific state and activity recreation remain manual checks;
+the established sign-in and saved-account read checks do not cover those flows.

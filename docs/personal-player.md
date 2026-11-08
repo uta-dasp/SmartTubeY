@@ -114,9 +114,21 @@ application of the legacy comments transform.
 
 ## Validation and remaining gaps
 
-Static XML parsing and whitespace checks are performed before handoff. Full personal-variant compilation and on-TV checks depend on the integrated baseline build; this branch has not run Gradle or controlled the TV.
+Integrated debug validation on 2026-11-08 at `f8a15d7` passed assemble (2m57s),
+lint (0 errors, 305 retained warnings, no new issues) and four quality-options
+tests through Gradle. The debug APK upgraded the target TV while retaining its
+signed-in account. These results do not constitute final signed-release QA.
 
-Required on-TV checks:
+On that APK, real NASA playback loaded with the correct title at x96 using 42px
+text. The focused center transport occupied x912–1008, centered at x960; labels
+were legible. The right panel occupied x1254–1866, with a live SurfaceView preview
+at x54–1200/y217–862. Basic Quality displayed one choice each for
+2160/1440/1080/720/480/360/240/144, and selecting 720 changed the stream.
+Earlier debug validation also observed fullscreen restoration after a codec
+change. The separate 31-assertion navigation smoke passed, but does not exercise
+player actions or track changes.
+
+Remaining on-TV checks, including the final signed release:
 
 - Play/pause/previous/next, media keys, seek confirmation/cancel, storyboard thumbnails and SponsorBlock timeline segments.
 - Every row in the placement matrix, with state changes, bound like/dislike state, original long presses and explicit Advanced options.
@@ -126,4 +138,4 @@ Required on-TV checks:
 - Browse settings while a background/PiP player exists; notification/comment/opaque/don't-resize paths must not acquire a personal preview lease.
 - Live video, chat, subtitles, vertical/cinema video, zoom/rotation and texture/surface modes; measure actual SurfaceView clipping on the TV.
 
-The visible SponsorBlock button is an intentional additional SmartTube control. Quality and Audio use separate track panels, while codec-specific labels and the available audio choices follow SmartTube's engine capabilities. The personal menu preserves SmartTube's actual capabilities; it does not add inactive Report/Feedback controls. Android system sans-serif is used, with no copied proprietary JavaScript or font assets. Exact glyphs, category icons/checkmarks, all animation timings, seek-preview placement and final row coordinates require device comparison. Preference resource overlays apply consistently to the personal flavor's settings surfaces.
+The visible SponsorBlock button is an intentional additional SmartTube control. Quality and Audio use separate track panels, while codec-specific labels and the available audio choices follow SmartTube's engine capabilities. The personal menu preserves SmartTube's actual capabilities; it does not add inactive Report/Feedback controls. Android system sans-serif is used, with no copied proprietary JavaScript or font assets. Remaining glyph/state coverage, animation timings, seek-preview placement and unmeasured row coordinates require device comparison. Preference resource overlays apply consistently to the personal flavor's settings surfaces.

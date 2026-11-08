@@ -43,7 +43,16 @@ outline around it. Native metadata occupies the right side. Dialog preview owner
 leases defer portrait relayout and hide native chrome until the last lease releases.
 Existing controls, active dialogs and PIP keep their original input paths.
 
-Validation still needed after integration: Android resource/type compilation,
-SurfaceView rounded clipping on the target TV, real next/previous/continuation,
-account changes, queue-to-regular transition, PIP, More/seek/dialog focus, and Back
-origin without entry re-open. No additional player or media decoder is instantiated.
+Integrated debug assemble and lint passed at `f8a15d7` on 2026-11-08 (0 lint
+errors, 305 retained warnings, no new issues). Earlier debug-lineage TV captures
+verified decoded portrait playback, Down to the next real video, Up to the
+previous video, Back revealing the rail while retaining playback, and a second
+Back returning to the stopped entry without an automatic reopen. The separate
+31-assertion navigation smoke passed; it does not exercise Shorts playback.
+
+Final signed-release QA remains pending. Remaining manual checks include
+SurfaceView rounded clipping, feed continuation beyond loaded items, account
+changes, queue-to-regular transition, PIP, background/resume and More/active
+seek/dialog/comments focus and restoration. No additional player or media decoder
+is instantiated. Basic next/previous observations do not establish continuation
+or every controller path.
