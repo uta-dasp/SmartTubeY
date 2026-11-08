@@ -14,6 +14,7 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ProgressBar;
@@ -90,6 +91,20 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
     private String restoreChannelKey;
     private boolean restoreRequested,restoreRight;
     private int restorePosition=-1;
+    private final ViewTreeObserver.OnGlobalFocusChangeListener pendingFocusListener=(oldFocus,newFocus)->{
+        if(!pendingVideoFocus||newFocus==null)return;
+        if(newFocus==status)return;
+        if(isInside(newFocus,channelGrid)){
+            RecyclerView.ViewHolder holder=channelGrid.findContainingViewHolder(newFocus);
+            if(holder instanceof ItemBridgeAdapter.ViewHolder){
+                Object item=((ItemBridgeAdapter.ViewHolder)holder).getItem();
+                if(item instanceof PersonalSubscriptionChannelPresenter.Entry&&
+                        ((PersonalSubscriptionChannelPresenter.Entry)item).key.equals(channelKey(selectedChannel)))return;
+            }
+        }
+        // Moving to another channel, the rail, or the video pane supersedes the pending click.
+        pendingVideoFocus=false;
+    };
 
     @Override public void onCreate(@Nullable Bundle state){
         super.onCreate(null);
@@ -195,6 +210,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
                 if(holder.itemView.hasFocus()&&position>=videos.size()-5){
                     if(selectedChannel==null)presenter.onScrollEnd((Video)videos.get(videos.size()-1));else loadMoreChannelVideos();
                 }
+                focusPendingVideos();
             }
         });
         status=text("",15,false);status.setFocusable(true);status.setPadding(dp(12),dp(12),dp(12),dp(12));
@@ -210,6 +226,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
             if(MediaServiceManager.instance().getSelectedAccount()==null)AccountSelectionPresenter.instance(requireContext()).show(true);else loadChannels();
         });place(channelStatus,-5,145,210,100);
         progress=new ProgressBar(requireContext());place(progress,815,92,18,18);progress.setVisibility(View.GONE);
+        root.getViewTreeObserver().addOnGlobalFocusChangeListener(pendingFocusListener);
         return root;
     }
 
@@ -244,6 +261,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
             if(!group.isEmpty())allVideos.add(group);
         }
         renderStatus();tryRestore();
+        if(selectedChannel==null)focusPendingVideos();
     }
 
     private void modify(VideoGroupObjectAdapter adapter,VideoGroup group){
@@ -377,7 +395,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
                     .subscribe(group->{
                         if(root==null||generation!=channelGeneration)return;
                         channelGroup=VideoGroup.from(group);supplyChannelIds(channelGroup,channel);channelVideos.add(channelGroup);channelLoading=false;channelProcessor.process(channelGroup);
-                        renderStatus();tryRestore();if(pendingVideoFocus&&channelVideos.size()>0){videoGrid.requestFocus();pendingVideoFocus=false;}
+                        renderStatus();tryRestore();focusPendingVideos();
                     },error->{if(root!=null&&generation==channelGeneration){channelLoading=false;renderStatus();}},
                             ()->{if(root!=null&&generation==channelGeneration){channelLoading=false;renderStatus();handler.post(this::tryRestore);}});
         };
@@ -411,6 +429,16 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         channelStatus.setFocusable(channelRequests==0);channelStatus.setVisibility(empty?View.VISIBLE:View.GONE);
     }
     private VideoGroupObjectAdapter activeVideos(){return selectedChannel==null?allVideos:channelVideos;}
+    private void focusPendingVideos(){
+        if(!pendingVideoFocus||root==null||videoGrid==null||activeVideos().isEmpty())return;
+        FrameLayout owner=root;String channel=channelKey(selectedChannel);
+        // Adapter arrival can precede RecyclerView's first child layout. Retain intent until
+        // focus succeeds; its selection callback retries once children become available.
+        videoGrid.post(()->{
+            if(root==owner&&pendingVideoFocus&&videoGrid!=null&&channel.equals(channelKey(selectedChannel))&&
+                    !activeVideos().isEmpty()&&videoGrid.requestFocus())pendingVideoFocus=false;
+        });
+    }
     private static void supplyChannelIds(VideoGroup group,Video channel){
         if(channel!=null&&channel.channelId!=null)for(Video video:group.getVideos())if(video.channelId==null)video.channelId=channel.channelId;
     }
@@ -443,7 +471,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
     }
     private void cancelRestore(){restoreRequested=false;restoreItem=null;restoreChannelKey=null;}
     private void cancelChannelLoad(){
-        channelGeneration++;dispose(channelRequest);dispose(channelMoreRequest);channelProcessor.dispose();
+        pendingVideoFocus=false;channelGeneration++;dispose(channelRequest);dispose(channelMoreRequest);channelProcessor.dispose();
         if(pendingChannelLoad!=null)handler.removeCallbacks(pendingChannelLoad);
     }
     private static String channelKey(Video video){
@@ -460,11 +488,19 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
 
     @Override public void onDestroyView(){
         viewDestroyed=true;
+        pendingVideoFocus=false;
+        if(root!=null)root.getViewTreeObserver().removeOnGlobalFocusChangeListener(pendingFocusListener);
         MediaServiceManager.instance().removeAccountListener(this);
         channelGeneration++;handler.removeCallbacksAndMessages(null);
         dispose(recentRequest);dispose(namesRequest);dispose(namesMoreRequest);dispose(channelRequest);dispose(channelMoreRequest);channelProcessor.dispose();
         root=null;channelGrid=null;videoGrid=null;status=null;channelStatus=null;progress=null;heading=null;
         super.onDestroyView();
+    }
+    @Override public void onPause(){pendingVideoFocus=false;super.onPause();}
+    private static boolean isInside(View view,View ancestor){
+        if(ancestor==null)return false;
+        while(view!=null){if(view==ancestor)return true;view=view.getParent() instanceof View?(View)view.getParent():null;}
+        return false;
     }
     private static void dispose(Disposable disposable){if(disposable!=null)disposable.dispose();}
     private static boolean active(Disposable disposable){return disposable!=null&&!disposable.isDisposed();}
