@@ -97,9 +97,8 @@ public class PersonalAccountChooserFragment extends DialogFragment {
         Context context = requireContext();
         root = new FrameLayout(context); root.addView(new Backdrop(context), new FrameLayout.LayoutParams(-1, -1));
         root.setClipChildren(false); root.setClipToPadding(false);
-        TextView brand = label(getString(R.string.personal_brand), 24, true);
-        brand.setGravity(Gravity.CENTER);
-        FrameLayout.LayoutParams brandParams = new FrameLayout.LayoutParams(-1, dp(40));
+        View brand = PersonalBrandHeader.create(context, 24);
+        FrameLayout.LayoutParams brandParams = new FrameLayout.LayoutParams(-2, dp(40), Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         brandParams.topMargin = dp(64); root.addView(brand, brandParams);
         empty = label(getString(R.string.personal_accounts_empty), 14, false);
         empty.setTextColor(0xFFAAAAAA); empty.setGravity(Gravity.CENTER);

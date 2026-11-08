@@ -176,8 +176,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         translatedContent.addView(content, contentParams);
         addSearchHeader(context);
 
-        TextView brand = text(getString(R.string.personal_brand), 21);
-        brand.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+        View brand = PersonalBrandHeader.create(context, 21);
         FrameLayout.LayoutParams brandParams = new FrameLayout.LayoutParams(-2, dp(36), Gravity.TOP | Gravity.END);
         brandParams.topMargin = dp(33);
         brandParams.rightMargin = dp(54);

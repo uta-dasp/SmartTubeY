@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:icon="@mipmap/app_icon_v2"
+        android:logo="@mipmap/app_logo_v2"
+        android:banner="@mipmap/app_banner_v2"
+        tools:replace="android:icon,android:logo,android:banner">
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity"
+            android:theme="@style/Personal.BrandSplash" />
+        <activity-alias
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivityAlt"
+            android:icon="@mipmap/app_icon_v2"
+            tools:replace="android:icon" />
+    </application>
+</manifest>

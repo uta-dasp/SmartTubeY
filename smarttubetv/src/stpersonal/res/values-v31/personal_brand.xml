@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Personal.BrandSplash" parent="App.Theme.Leanback.Browse">
+        <item name="android:windowBackground">@color/personal_brand_background</item>
+        <item name="android:windowSplashScreenBackground">@color/personal_brand_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/app_icon_v2</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+    </style>
+</resources>

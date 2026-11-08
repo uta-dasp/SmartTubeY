@@ -60,6 +60,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalAccountChooserFragment;
+import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalBrandHeader;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
@@ -268,9 +269,9 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
             }
             return false;
         });
-        TextView brand=label(getString(R.string.app_name),25,true);
-        FrameLayout.LayoutParams brandParams=new FrameLayout.LayoutParams(dp(170),dp(36),Gravity.TOP|Gravity.RIGHT);
-        brandParams.topMargin=dp(33);brandParams.rightMargin=dp(54);brand.setGravity(Gravity.CENTER_VERTICAL|Gravity.RIGHT);
+        View brand=PersonalBrandHeader.create(requireContext(),25);
+        FrameLayout.LayoutParams brandParams=new FrameLayout.LayoutParams(-2,dp(36),Gravity.TOP|Gravity.RIGHT);
+        brandParams.topMargin=dp(33);brandParams.rightMargin=dp(54);
         root.addView(brand,brandParams);
     }
 

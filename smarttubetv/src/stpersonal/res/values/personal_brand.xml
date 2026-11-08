@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="app_logo_v2" type="mipmap">@mipmap/app_icon_v2</item>
+    <color name="personal_brand_background">#0F0F0F</color>
+    <style name="Personal.BrandSplash" parent="App.Theme.Leanback.Browse">
+        <item name="android:windowBackground">@color/personal_brand_background</item>
+    </style>
+</resources>
