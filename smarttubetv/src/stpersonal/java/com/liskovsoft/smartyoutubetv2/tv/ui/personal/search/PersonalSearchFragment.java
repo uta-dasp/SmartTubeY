@@ -53,12 +53,13 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.search.MediaServiceSearc
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SearchView;
 import com.liskovsoft.smartyoutubetv2.common.misc.CrashRestorer;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
+import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalAccountChooserFragment;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
@@ -74,7 +75,8 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 /** Native keyboard, suggestions and recycled shelves over the unchanged SearchPresenter contract. */
-public class PersonalSearchFragment extends Fragment implements SearchView, SearchScreen {
+public class PersonalSearchFragment extends Fragment implements SearchView, SearchScreen,
+        PersonalAccountChooserFragment.Listener {
     private static final int BACKGROUND=0xFF0F0F0F, TEXT=0xFFF1F1F1, MUTED=0xFFAAAAAA, FILL=0xFF272727;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<Integer,VideoGroupObjectAdapter> groups = new LinkedHashMap<>();
@@ -94,6 +96,8 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
     private LinearLayout suggestions;
     private ScrollView suggestionsScroll;
     private EditText input;
+    private ImageView accountAvatar;
+    private String accountIdentity;
     private TextView status;
     private ProgressBar progress;
     private Disposable recommendations;
@@ -201,7 +205,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
         handler.removeCallbacksAndMessages(null);
         cancelRecommendations();
         voice.stop();
-        root=null; input=null;
+        root=null; input=null; accountAvatar=null;
         super.onDestroyView();
     }
 
@@ -269,11 +273,11 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
 
     private void buildRail() {
         ImageView avatar=new ImageView(requireContext());
+        accountAvatar=avatar;
         avatar.setBackground(shape(20,FILL));
         avatar.setFocusable(true);avatar.setContentDescription(getString(R.string.personal_search_account));
-        avatar.setOnClickListener(view -> AccountSelectionPresenter.instance(requireContext()).show());
-        Account account=MediaServiceManager.instance().getSelectedAccount();
-        if(account!=null) Glide.with(this).load(account.getAvatarImageUrl()).circleCrop().into(avatar);
+        avatar.setOnClickListener(view -> PersonalAccountChooserFragment.show(this));
+        refreshAccountBadge();
         place(root,avatar,25.5f,37.5f,27,27);
         String[] icons={"search","home","shorts","subscriptions","library","music","live","gaming","movies"};
         int[] destinations={-1,MediaGroup.TYPE_HOME,MediaGroup.TYPE_SHORTS,MediaGroup.TYPE_SUBSCRIPTIONS,MediaGroup.TYPE_USER_PLAYLISTS,
@@ -295,6 +299,28 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
         }
         FrameLayout settings=iconButton("settings",getString(R.string.personal_search_settings),18,() -> presenter.onSearchSettingsClicked());
         place(root,settings,21,474,36,36);
+    }
+
+    private void refreshAccountBadge() {
+        if(accountAvatar==null)return;
+        Account account=MediaServiceManager.instance().getSelectedAccount();
+        accountIdentity=account==null?null:account.getEmail()+"|"+account.getName()+"|"+account.getAvatarImageUrl();
+        Glide.with(this).clear(accountAvatar);
+        if(account!=null&&!TextUtils.isEmpty(account.getAvatarImageUrl()))
+            Glide.with(this).load(account.getAvatarImageUrl()).circleCrop().into(accountAvatar);
+        else accountAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
+    }
+
+    @Override public void onPersonalAccountChooserClosed() {
+        if(root==null)return;
+        String previous=accountIdentity;
+        refreshAccountBadge();
+        if(!TextUtils.equals(previous,accountIdentity)) {
+            if(!AccountsData.instance(requireContext()).isPasswordAccepted()){finishReally();return;}
+            String query=getSearchText();
+            clearSearch();startSearch(query);
+        }
+        if(accountAvatar!=null)accountAvatar.requestFocus();
     }
 
     private void buildKeyboard() {

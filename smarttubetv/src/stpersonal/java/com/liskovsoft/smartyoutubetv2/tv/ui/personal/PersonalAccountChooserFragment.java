@@ -30,6 +30,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import com.bumptech.glide.Glide;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
@@ -46,6 +47,9 @@ import java.util.List;
 
 /** A TV profile carousel containing only the accounts saved through SmartTube's sign-in service. */
 public class PersonalAccountChooserFragment extends DialogFragment {
+    public interface Listener {
+        void onPersonalAccountChooserClosed();
+    }
     private static final String TAG = "personal_account_chooser";
     private final List<ProfileCard> cards = new ArrayList<>();
     private FrameLayout root;
@@ -66,7 +70,7 @@ public class PersonalAccountChooserFragment extends DialogFragment {
         }
     };
 
-    static void show(PersonalBrowseFragment parent) {
+    public static void show(Fragment parent) {
         FragmentManager manager = parent.getChildFragmentManager();
         if (!manager.isStateSaved() && manager.findFragmentByTag(TAG) == null) {
             new PersonalAccountChooserFragment().show(manager, TAG);
@@ -188,6 +192,8 @@ public class PersonalAccountChooserFragment extends DialogFragment {
         super.onDismiss(dialog);
         if (getParentFragment() instanceof PersonalBrowseFragment) {
             ((PersonalBrowseFragment) getParentFragment()).onPersonalAccountChooserClosed();
+        } else if (getParentFragment() instanceof Listener) {
+            ((Listener) getParentFragment()).onPersonalAccountChooserClosed();
         }
     }
 

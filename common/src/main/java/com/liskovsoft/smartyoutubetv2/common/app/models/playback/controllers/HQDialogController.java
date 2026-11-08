@@ -86,6 +86,27 @@ public class HQDialogController extends BasePlayerController {
                 UiOptionItem.from(audioFormats, this::selectFormatOption, getContext().getString(R.string.option_disabled))));
     }
 
+    /** Opens one track list without consuming the categories/listeners of the full HQ dialog. */
+    public boolean showFormatDialog(int formatType, CharSequence title) {
+        if (getPlayer() == null || mAppDialogPresenter == null ||
+                (formatType != FormatItem.TYPE_VIDEO && formatType != FormatItem.TYPE_AUDIO)) {
+            return false;
+        }
+        List<FormatItem> formats = formatType == FormatItem.TYPE_VIDEO
+                ? getPlayer().getVideoFormats() : getPlayer().getAudioFormats();
+        if (formats == null || formats.isEmpty()) {
+            return false;
+        }
+        fitVideoIntoDialog();
+        mAppDialogPresenter.appendCategory(OptionCategory.from(
+                formatType == FormatItem.TYPE_VIDEO ? VIDEO_FORMATS_ID : AUDIO_FORMATS_ID,
+                OptionCategory.TYPE_RADIO_LIST, title,
+                UiOptionItem.from(formats, this::selectFormatOption, getContext().getString(R.string.option_disabled))));
+        // This panel cannot change the advanced categories. Their hide listeners belong to the full dialog.
+        mAppDialogPresenter.showDialog(title);
+        return true;
+    }
+
     private void selectFormatOption(OptionItem option) {
         if (getPlayer() == null) {
             return;

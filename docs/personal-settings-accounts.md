@@ -1,7 +1,8 @@
 # Personal settings and accounts
 
 The `stpersonal` browse factory creates `PersonalSettingsFragment`; all other flavors keep
-`SettingsGridFragment`. The personal avatar opens a native `PersonalAccountChooserFragment`.
+`SettingsGridFragment`. Personal browse and search avatars open the same native
+`PersonalAccountChooserFragment`.
 Both surfaces use existing SmartTube data and presenters. They do not use accounts or
 credentials from the installed Google YouTube application.
 
@@ -70,6 +71,11 @@ to that control, then guest; Up returns to the associated card. Focus identity i
 across view recreation using the model email/name and avatar URL without logging it. Closing
 the chooser refreshes the browse badge and any visible account detail pane. Add and Manage
 continue into the existing app flows after dismissing the chooser.
+
+Search refreshes its badge when the chooser closes. An actual account change clears and
+reloads the current query through `SearchPresenter`; protected accounts still require the
+source password acceptance before results remain accessible. Canceling without changing
+accounts leaves the current search results in place.
 
 ## Validation and remaining gaps
 

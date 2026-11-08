@@ -13,6 +13,14 @@ public class PersonalPlayerControlBar extends ControlBar {
     }
 
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        // The legacy bar adjusts its measured width to center-space wrap-content children.
+        // This bar fills its dock and positions children itself, so retain the parent's width.
+        super.setChildMarginFromCenter(0);
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         ViewParent parent = getParent();

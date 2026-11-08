@@ -25,6 +25,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.HQDialogController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
@@ -323,6 +324,10 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
             CharSequence description = personalSettingDescription(title, action);
             dialog.appendSingleButton(UiOptionItem.from(getContext().getString(title), description,
                     option -> {
+                        if ((title == R.string.personal_player_quality || title == R.string.personal_player_audio)
+                                && showPersonalFormatDialog(title)) {
+                            return;
+                        }
                         if (longAction) {
                             dispatchPersonalOptions(action);
                         } else {
@@ -330,6 +335,13 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
                         }
                     }, false, action));
         }
+    }
+
+    private boolean showPersonalFormatDialog(int title) {
+        HQDialogController controller = PlaybackPresenter.instance(getContext()).getController(HQDialogController.class);
+        return controller != null && controller.showFormatDialog(
+                title == R.string.personal_player_quality ? FormatItem.TYPE_VIDEO : FormatItem.TYPE_AUDIO,
+                getContext().getString(title));
     }
 
     private CharSequence personalSettingDescription(int title, Action action) {

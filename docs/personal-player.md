@@ -13,7 +13,7 @@ Visible controls continue to honor the existing player-button preference. A hidd
 | `lb_control_play_pause` | `PlaybackControlsRow.PlayPauseAction` | Center transport | Original play/pause object and media-key dispatch |
 | `lb_control_skip_previous` | `PlaybackControlsRow.SkipPreviousAction` | Center transport, left | Original previous callback |
 | `lb_control_skip_next` | `PlaybackControlsRow.SkipNextAction` | Center transport, right | Original next callback and dynamic next-title label |
-| `lb_control_high_quality` | `HighQualityAction` | Settings → Quality; Settings → Audio; Advanced | Opens the existing combined video/audio/settings controller |
+| `lb_control_high_quality` | `HighQualityAction` | Settings → Quality; Settings → Audio; Advanced | Quality and Audio open separate real track lists through the existing format-selection callback; Advanced opens the original combined HQ controller |
 | `action_repeat` | `PlaybackModeAction` | Settings → Repeat; Advanced | Settings opens the original mode picker; Advanced retains the original cycling action and options command |
 | `action_video_speed` | `VideoSpeedAction` | Settings → Speed; Advanced | Settings opens the original long-action speed chooser; Advanced retains the original short toggle and options command |
 | `action_pip` | `PipAction` | Advanced | Original PiP callback |
@@ -42,6 +42,15 @@ The original glue also allocates rewind and fast-forward actions but does not ad
 
 Advanced wraps the original Action objects rather than reconstructing their state. Its short-action entries read current labels and two-state indices when opened/selected. Controller state changes still invalidate visible action adapters. The tail fallback includes newly added upstream mapped actions so future features do not silently disappear.
 
+Quality and Audio use `HQDialogController.showFormatDialog` to display only the requested
+real video/audio radio category. The shared selection callback retains format persistence,
+preset warnings, media reload and overlay behavior. These panels leave the full HQ category
+maps and hide listeners intact; only the original combined HQ dialog consumes their cleanup.
+Track labels and disabled entries retain their actual engine meanings. No disabled renderer
+is relabeled as Auto, and unavailable official audio processing features are not invented.
+The personal control bar also bypasses the legacy wrap-content center-margin measurement,
+so its edge groups anchor to the actual dock width.
+
 ## Real video preview during settings
 
 `AppDialogActivity` requests a preview lease only for a normal player-origin dialog. It checks the top application view, a live PlaybackFragment/activity, the user's don't-resize preference, and PiP. Browse-origin dialogs, background playback, notifications/transparent dialogs, comments and opaque dialog activities keep their existing presentation path.
@@ -65,4 +74,4 @@ Required on-TV checks:
 - Browse settings while a background/PiP player exists; notification/comment/opaque/don't-resize paths must not acquire a personal preview lease.
 - Live video, chat, subtitles, vertical/cinema video, zoom/rotation and texture/surface modes; measure actual SurfaceView clipping on the TV.
 
-The visible SponsorBlock button is an intentional additional SmartTube control. Quality and Audio currently use SmartTube's existing combined HQ/settings dialog, so their internal grouping differs from the reference's separate simple lists. The personal menu preserves SmartTube's actual capabilities; it does not add inactive Report/Feedback controls. Android system sans-serif is used, with no copied proprietary JavaScript or font assets. Exact glyphs, category icons/checkmarks, all animation timings, seek-preview placement and final row coordinates require device comparison. Preference resource overlays apply consistently to the personal flavor's settings surfaces.
+The visible SponsorBlock button is an intentional additional SmartTube control. Quality and Audio use separate track panels, while codec-specific labels and the available audio choices follow SmartTube's engine capabilities. The personal menu preserves SmartTube's actual capabilities; it does not add inactive Report/Feedback controls. Android system sans-serif is used, with no copied proprietary JavaScript or font assets. Exact glyphs, category icons/checkmarks, all animation timings, seek-preview placement and final row coordinates require device comparison. Preference resource overlays apply consistently to the personal flavor's settings surfaces.
