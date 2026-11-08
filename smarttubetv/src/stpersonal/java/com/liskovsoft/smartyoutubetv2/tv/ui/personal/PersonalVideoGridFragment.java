@@ -32,6 +32,7 @@ public class PersonalVideoGridFragment extends VideoGridFragment {
     protected VerticalGridPresenter createVerticalGridPresenter() {
         VerticalGridPresenter presenter = new VerticalGridPresenter(FocusHighlight.ZOOM_FACTOR_NONE, false);
         presenter.setShadowEnabled(false);
+        presenter.enableChildRoundedCorners(false);
         return presenter;
     }
 

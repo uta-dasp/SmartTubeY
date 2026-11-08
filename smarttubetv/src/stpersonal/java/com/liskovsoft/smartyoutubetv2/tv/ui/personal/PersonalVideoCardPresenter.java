@@ -2,7 +2,14 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.personal;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.text.SpannableStringBuilder;
@@ -47,10 +54,12 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
             image.setBackground(rounded);
             if (android.os.Build.VERSION.SDK_INT >= 21) image.setClipToOutline(true);
             StateListDrawable ring = new StateListDrawable();
-            ring.addState(new int[]{android.R.attr.state_selected}, shape(context, Color.TRANSPARENT, true));
-            ring.addState(new int[]{android.R.attr.state_focused}, shape(context, Color.TRANSPARENT, true));
-            ring.addState(new int[]{}, shape(context, Color.TRANSPARENT, false));
-            if (android.os.Build.VERSION.SDK_INT >= 23) image.setForeground(ring);
+            ring.addState(new int[]{android.R.attr.state_selected}, new ThumbnailRing(context, image));
+            ring.addState(new int[]{android.R.attr.state_focused}, new ThumbnailRing(context, image));
+            ring.addState(new int[]{}, new ColorDrawable(Color.TRANSPARENT));
+            // The reference ring surrounds the thumbnail without covering its pixels.
+            // Keep the image's rounded clipping separate from the card foreground.
+            if (android.os.Build.VERSION.SDK_INT >= 23) card.setForeground(ring);
         }
         TextView title = card.findViewById(R.id.title_text);
         if (title != null) {
@@ -73,6 +82,47 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
             subtitle.setPadding(0, dp(context, 4), 0, 0);
         }
         return holder;
+    }
+
+    @Override
+    public void onViewAttachedToWindow(Presenter.ViewHolder holder) {
+        super.onViewAttachedToWindow(holder);
+        // Leanback's item and row containers otherwise cut off the outset focus ring.
+        android.view.ViewParent parent = holder.view.getParent();
+        while (parent instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) parent;
+            group.setClipChildren(false);
+            group.setClipToPadding(false);
+            if (group instanceof androidx.leanback.widget.VerticalGridView) break;
+            parent = group.getParent();
+        }
+    }
+
+    private static final class ThumbnailRing extends Drawable {
+        private final View image;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rectangle = new RectF();
+        private final int inset;
+        private final int radius;
+
+        ThumbnailRing(Context context, View image) {
+            this.image = image;
+            inset = dp(context, 2);
+            radius = dp(context, 11);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(context, 4));
+            paint.setColor(0xFFF1F1F1);
+        }
+
+        @Override public void draw(Canvas canvas) {
+            rectangle.set(image.getLeft() - inset, image.getTop() - inset,
+                    image.getRight() + inset, image.getBottom() + inset);
+            canvas.drawRoundRect(rectangle, radius, radius, paint);
+        }
+
+        @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
+        @Override public void setColorFilter(ColorFilter filter) { paint.setColorFilter(filter); invalidateSelf(); }
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
     }
 
     @Override

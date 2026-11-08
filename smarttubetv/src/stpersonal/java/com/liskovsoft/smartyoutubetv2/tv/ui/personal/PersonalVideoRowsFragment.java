@@ -28,7 +28,7 @@ public class PersonalVideoRowsFragment extends VideoRowsFragment {
         ListRowPresenter presenter = new ListRowPresenter(FocusHighlight.ZOOM_FACTOR_NONE, false);
         presenter.setSelectEffectEnabled(false);
         presenter.setShadowEnabled(false);
-        presenter.enableChildRoundedCorners(true);
+        presenter.enableChildRoundedCorners(false);
         presenter.setHeaderPresenter(new RowHeaderPresenter() {
             @Override
             public Presenter.ViewHolder onCreateViewHolder(ViewGroup parent) {
