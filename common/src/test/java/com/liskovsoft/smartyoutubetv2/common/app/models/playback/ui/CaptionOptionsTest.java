@@ -76,6 +76,26 @@ public class CaptionOptionsTest {
         assertSame(engineFormat, new CaptionOptions.DialogSelection().current(engineFormat));
     }
 
+    @Test public void reusedFormatIdsAcrossLanguagesCheckOnlyTheActualLanguageAndRoute() {
+        FakeFormat english = format("0", "English*");
+        FakeFormat abkhazian = format("0", "Abkhazian*");
+        FakeFormat zulu = format("0", "Zulu*");
+        FakeFormat current = format("0", "Abkhazian*");
+        int selectedCount = 0;
+        CharSequence routeLabel = null;
+        for (FormatItem option : Arrays.asList(english, abkhazian, zulu)) {
+            if (CaptionOptions.isCurrent(option, current)) {
+                selectedCount++;
+                assertSame(abkhazian, option);
+                routeLabel = CaptionOptions.label(option);
+            }
+        }
+        assertEquals(1, selectedCount);
+        assertEquals("Abkhazian", routeLabel);
+        assertFalse(CaptionOptions.isCurrent(english, current));
+        assertFalse(CaptionOptions.isCurrent(zulu, current));
+    }
+
     private static MediaSubtitle subtitle(String name, String url, String type) {
         return new MediaSubtitle() {
             @Override public String getBaseUrl() { return url; }

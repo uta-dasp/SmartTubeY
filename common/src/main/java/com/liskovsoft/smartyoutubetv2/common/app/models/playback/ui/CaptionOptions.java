@@ -57,6 +57,9 @@ public final class CaptionOptions {
     public static boolean isCurrent(FormatItem format, FormatItem current) {
         if (current == null) return format.isSelected();
         if (format.isDefault() || current.isDefault()) return format.isDefault() && current.isDefault();
+        // Some sources reuse representation IDs across subtitle language groups.
+        if (format.getLanguage() != null && current.getLanguage() != null &&
+                !format.getLanguage().equals(current.getLanguage())) return false;
         if (format.getFormatId() != null && current.getFormatId() != null) {
             return format.getFormatId().equals(current.getFormatId());
         }
