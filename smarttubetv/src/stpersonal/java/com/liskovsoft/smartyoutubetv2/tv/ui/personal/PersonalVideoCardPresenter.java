@@ -8,10 +8,8 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.StateListDrawable;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
 import android.util.TypedValue;
@@ -53,13 +51,9 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
             GradientDrawable rounded = shape(context, Color.TRANSPARENT, false);
             image.setBackground(rounded);
             if (android.os.Build.VERSION.SDK_INT >= 21) image.setClipToOutline(true);
-            StateListDrawable ring = new StateListDrawable();
-            ring.addState(new int[]{android.R.attr.state_selected}, new ThumbnailRing(context, image));
-            ring.addState(new int[]{android.R.attr.state_focused}, new ThumbnailRing(context, image));
-            ring.addState(new int[]{}, new ColorDrawable(Color.TRANSPARENT));
             // The reference ring surrounds the thumbnail without covering its pixels.
             // Keep the image's rounded clipping separate from the card foreground.
-            if (android.os.Build.VERSION.SDK_INT >= 23) card.setForeground(ring);
+            if (android.os.Build.VERSION.SDK_INT >= 23) card.setForeground(new ThumbnailRing(context, card, image));
         }
         TextView title = card.findViewById(R.id.title_text);
         if (title != null) {
@@ -99,13 +93,15 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
     }
 
     private static final class ThumbnailRing extends Drawable {
+        private final View card;
         private final View image;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF rectangle = new RectF();
         private final int inset;
         private final int radius;
 
-        ThumbnailRing(Context context, View image) {
+        ThumbnailRing(Context context, View card, View image) {
+            this.card = card;
             this.image = image;
             inset = dp(context, 2);
             radius = dp(context, 11);
@@ -115,6 +111,9 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
         }
 
         @Override public void draw(Canvas canvas) {
+            // BaseCardView deliberately removes focused/selected from drawableState.
+            // Read the actual card state rather than relying on a StateListDrawable.
+            if (!card.hasFocus() && !card.isSelected()) return;
             rectangle.set(image.getLeft() - inset, image.getTop() - inset,
                     image.getRight() + inset, image.getBottom() + inset);
             canvas.drawRoundRect(rectangle, radius, radius, paint);
