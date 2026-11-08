@@ -219,6 +219,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
         holder.name.setText(title!=null?title:requestedChannel);
         String handle=details!=null?details.handle:requestedChannel!=null&&requestedChannel.startsWith("@")?requestedChannel:null;
         String subscribers=details!=null&&details.subscribers!=null?getString(R.string.personal_channel_subscribers,formatCount(details.subscribers)):null;
+        if(details!=null&&details.statisticsText!=null)subscribers=details.statisticsText;
         if(subscribers==null&&videoMetadata!=null&&channelId()!=null&&channelId().equals(videoMetadata.getChannelId()))subscribers=videoMetadata.getSubscriberCount();
         holder.facts.setText(handle==null?subscribers:subscribers==null?handle:handle+" · "+subscribers);
         holder.facts.setVisibility(TextUtils.isEmpty(holder.facts.getText())?View.GONE:View.VISIBLE);
