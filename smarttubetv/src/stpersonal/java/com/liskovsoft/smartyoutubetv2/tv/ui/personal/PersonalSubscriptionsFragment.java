@@ -434,7 +434,9 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         else if(videos.size()>0){
             VideoGroup lastGroup=((Video)videos.get(videos.size()-1)).getGroup();
             MediaGroup group=lastGroup==null?null:lastGroup.getMediaGroup();
-            if(group!=null&&group.getNextPageKey()!=null){
+            // A no-growth channel page can retain a continuation token. Treat exhaustion as
+            // terminal so a missing remembered item still receives the bounded focus fallback.
+            if(group!=null&&group.getNextPageKey()!=null&&(selectedChannel==null||!channelExhausted)){
                 if(selectedChannel==null)presenter.onScrollEnd((Video)videos.get(videos.size()-1));else loadMoreChannelVideos();
             }else{videoGrid.setSelectedPosition(Math.max(0,Math.min(restorePosition,videos.size()-1)));videoGrid.requestFocus();cancelRestore();}
         }
