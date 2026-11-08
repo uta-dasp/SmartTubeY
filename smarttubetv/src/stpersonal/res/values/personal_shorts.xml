@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_shorts_play">Play Shorts</string>
+    <string name="personal_shorts_loading">Loading Shorts…</string>
+    <string name="personal_shorts_retry">No Shorts loaded. Select to retry.</string>
+    <string name="personal_shorts_feed">Shorts video. Up or Down for previous or next. Select to pause.</string>
+    <string name="personal_shorts_like">Like</string>
+    <string name="personal_shorts_comments">Comments</string>
+    <string name="personal_shorts_more">More</string>
+</resources>

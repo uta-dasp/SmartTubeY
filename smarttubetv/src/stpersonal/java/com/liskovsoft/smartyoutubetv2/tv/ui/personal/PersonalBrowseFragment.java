@@ -137,6 +137,11 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             protected Fragment createSettingsFragment() {
                 return new PersonalSettingsFragment();
             }
+
+            @Override
+            protected Fragment createShortsFragment() {
+                return new com.liskovsoft.smartyoutubetv2.tv.ui.personal.shorts.PersonalShortsEntryFragment();
+            }
         };
     }
 
@@ -409,6 +414,23 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     void openLibraryDestination(int sectionId) {
         showingLibrary = false;
         presenter.selectSection(sectionId);
+    }
+
+    /** A player-owned rail routes back through this existing browse view and section indices. */
+    public void openNavigationFromPlayer(int sectionId) {
+        if (sectionId == MediaGroup.TYPE_HISTORY) openLibrary(false);
+        else {
+            int index = findSectionIndex(sectionId);
+            if (index >= 0) activateNavigationSection(index, false, true);
+            else presenter.selectSection(sectionId);
+        }
+        focusNavigation();
+    }
+
+    public void openAdvancedFromPlayer() {
+        setExpanded(true);
+        setAdvancedOpen(true);
+        if (advancedButton != null) advancedButton.requestFocus();
     }
 
     private void showSettingsFallback() {
