@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
 import android.view.KeyEvent;
+import android.view.Gravity;
 
 import androidx.fragment.app.Fragment;
 
@@ -24,6 +25,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.GlobalKeyTranslator;
 import com.liskovsoft.smartyoutubetv2.common.misc.PlayerKeyTranslator;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackActivity;
@@ -39,6 +41,8 @@ public class AppDialogActivity extends MotherActivity {
     private Drawable mPersonalOriginalBackground;
     private float mPersonalOriginalDimAmount;
     private int mPersonalOriginalDimFlag;
+    private boolean mPersonalDialogResumed;
+    private boolean mPersonalReturnFromComments;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +58,18 @@ public class AppDialogActivity extends MotherActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        mPersonalDialogResumed = true;
         updatePersonalPlayerDialog();
+        if (PersonalPlayerPresentation.isEnabled(this)) {
+            getWindow().getDecorView().post(this::updatePersonalPlayerDialog);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        mPersonalDialogResumed = false;
+        endPersonalPlayerDialog();
+        super.onPause();
     }
 
     @Override
@@ -75,9 +90,9 @@ public class AppDialogActivity extends MotherActivity {
         }
         // A retained/background player must not resize behind browsing settings or notifications.
         if (!PersonalPlayerPresentation.isEnabled(this) || this instanceof AppDialogActivityOpaque
-                || mFragment == null || mFragment.isOverlay() || mFragment.isTransparent()
+                || mFragment == null || mFragment.isPersonalOverlayPresentation() || mFragment.isPersonalTransparentPresentation()
                 || PlayerTweaksData.instance(this).isDontResizeVideoToFitDialogEnabled()
-                || com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter.instance(this).isComments()
+                || mFragment.isPersonalCommentsPresentation()
                 || ViewManager.instance(this).getTopView() != PlaybackView.class) {
             return;
         }
@@ -90,6 +105,13 @@ public class AppDialogActivity extends MotherActivity {
         if (activity == null || activity.isFinishing() || host.getView() == null
                 || (VERSION.SDK_INT >= 26 && activity.isInPictureInPictureMode())) {
             return;
+        }
+        if (mPersonalReturnFromComments) {
+            // Comments uses the original zoom/gravity path. Clear that transform before
+            // resizing the retained surface for the normal panel restored by Back.
+            host.setZoomPercents(PlayerData.instance(this).getZoomPercents());
+            host.setVideoGravity(Gravity.CENTER);
+            mPersonalReturnFromComments = false;
         }
         mPersonalPlayerHost = host;
         host.setPlayerDialogVisible(this, true);
@@ -134,8 +156,10 @@ public class AppDialogActivity extends MotherActivity {
     }
 
     void updatePersonalPlayerDialog() {
-        if (mFragment != null && (mFragment.isOverlay() || mFragment.isTransparent()
-                || com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter.instance(this).isComments())) {
+        boolean comments = mFragment != null && mFragment.isPersonalCommentsPresentation();
+        if (comments) mPersonalReturnFromComments = true;
+        if (!mPersonalDialogResumed || mFragment == null || comments
+                || mFragment.isPersonalOverlayPresentation() || mFragment.isPersonalTransparentPresentation()) {
             endPersonalPlayerDialog();
         } else {
             beginPersonalPlayerDialog();

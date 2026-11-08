@@ -61,6 +61,14 @@ The optional common `DialogPreviewHost` interface prevents upstream `fitVideoInt
 
 Leases are owner-scoped and idempotent. Nested activities cannot restore fullscreen while another lease remains. Closing, stopping or destroying the dialog releases its lease. Destroying the player view clears all leases. Original host parameters, backgrounds, clipping, subtitle padding and affected visibility are restored. Later player/chat visibility updates take precedence over a stale captured visibility.
 
+The visible preference child supplies the personal presentation type. Its comments class and
+saved per-child overlay/transparent flags survive nested Back navigation without relying on
+the presenter's latest category backup. A child-backstack observer and post-commit refresh
+update the lease; the observer is removed on destruction or manager replacement. Paused
+activities cannot reacquire through a queued refresh. Returning from comments to a normal
+personal panel restores configured zoom/center gravity before resizing, avoiding a second
+application of the legacy comments transform.
+
 ## Validation and remaining gaps
 
 Static XML parsing and whitespace checks are performed before handoff. Full personal-variant compilation and on-TV checks depend on the integrated baseline build; this branch has not run Gradle or controlled the TV.
@@ -70,6 +78,7 @@ Required on-TV checks:
 - Play/pause/previous/next, media keys, seek confirmation/cancel, storyboard thumbnails and SponsorBlock timeline segments.
 - Every row in the placement matrix, with state changes, bound like/dislike state, original long presses and explicit Advanced options.
 - Settings → Quality/Audio/Captions/Speed/Repeat → Back → Settings → Back; focus returns to the invoking control.
+- Settings → Advanced → Chat/comments → replies → Back → comments → Back → Advanced; verify the live preview returns at its normal size and fullscreen restores after closing.
 - Close via Back, Home, background/resume, timeout and activity recreation; verify fullscreen/subtitle restoration, no stale clipping and no changed engine state.
 - Browse settings while a background/PiP player exists; notification/comment/opaque/don't-resize paths must not acquire a personal preview lease.
 - Live video, chat, subtitles, vertical/cinema video, zoom/rotation and texture/surface modes; measure actual SurfaceView clipping on the TV.

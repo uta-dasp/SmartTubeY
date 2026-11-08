@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.dialogs;
 
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.os.Bundle;
@@ -32,6 +33,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.RadioListPreferenceDia
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.StringListPreference;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.StringListPreferenceDialogFragment;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.preference.LeanbackListPreferenceDialogFragment;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 import java.util.List;
@@ -45,6 +47,10 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
     private boolean mIsOverlay;
     private boolean mIsPaused;
     private int mId;
+    private FragmentManager mPersonalObservedManager;
+    private final FragmentManager.OnBackStackChangedListener mPersonalBackstackListener = this::refreshPersonalPlayerDialog;
+    private static final String PERSONAL_OVERLAY = "personal.dialog.overlay";
+    private static final String PERSONAL_TRANSPARENT = "personal.dialog.transparent";
 
     private static final String PREFERENCE_FRAGMENT_TAG =
             "androidx.leanback.preference.LeanbackSettingsFragment.PREFERENCE_FRAGMENT";
@@ -56,6 +62,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         mPresenter = AppDialogPresenter.instance(getActivity());
         mPresenter.setView(this);
         mManager = new AppPreferenceManager(getActivity());
+        observePersonalBackstack();
     }
 
     @Override
@@ -76,6 +83,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
 
     @Override
     public void onDestroy() {
+        stopObservingPersonalBackstack();
         super.onDestroy();
         Log.d(TAG, "onDestroy");
         if (mPresenter.getView() == this) {
@@ -133,9 +141,6 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         mIsTransparent = stackIsEmpty ? isTransparent : mIsTransparent;
         mIsOverlay = isOverlay;
         mId = id;
-        if (getActivity() instanceof AppDialogActivity) {
-            ((AppDialogActivity) getActivity()).updatePersonalPlayerDialog();
-        }
 
         if (isExpandable && categories != null && categories.size() == 1) {
             OptionCategory category = categories.get(0);
@@ -145,14 +150,6 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         } else {
             AppPreferenceFragment fragment = buildPreferenceFragment(categories, title);
             startPreferenceFragment(fragment);
-        }
-        if (getActivity() instanceof AppDialogActivity && getView() != null) {
-            AppDialogActivity activity = (AppDialogActivity) getActivity();
-            getView().post(() -> {
-                if (isAdded() && !activity.isFinishing()) {
-                    activity.updatePersonalPlayerDialog();
-                }
-            });
         }
     }
 
@@ -232,6 +229,14 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
      */
     @Override
     public void startPreferenceFragment(@NonNull Fragment fragment) {
+        if (PersonalPlayerPresentation.isEnabled(getActivity())) {
+            observePersonalBackstack();
+            Bundle arguments = fragment.getArguments();
+            if (arguments == null) arguments = new Bundle();
+            arguments.putBoolean(PERSONAL_OVERLAY, mIsOverlay);
+            arguments.putBoolean(PERSONAL_TRANSPARENT, mIsTransparent);
+            fragment.setArguments(arguments);
+        }
         final FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
         final Fragment prevFragment =
                 getChildFragmentManager().findFragmentByTag(PREFERENCE_FRAGMENT_TAG);
@@ -247,6 +252,46 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         }
         // Fix possible state loss!!!
         transaction.commitAllowingStateLoss();
+        // Initial adds have no backstack entry, so also refresh after their queued commit.
+        if (getView() != null) getView().post(this::refreshPersonalPlayerDialog);
+    }
+
+    private void observePersonalBackstack() {
+        if (!PersonalPlayerPresentation.isEnabled(getActivity())) return;
+        FragmentManager manager = getChildFragmentManager();
+        if (manager != mPersonalObservedManager) {
+            stopObservingPersonalBackstack();
+            mPersonalObservedManager = manager;
+            manager.addOnBackStackChangedListener(mPersonalBackstackListener);
+        }
+    }
+
+    private void stopObservingPersonalBackstack() {
+        if (mPersonalObservedManager != null) {
+            mPersonalObservedManager.removeOnBackStackChangedListener(mPersonalBackstackListener);
+            mPersonalObservedManager = null;
+        }
+    }
+
+    private void refreshPersonalPlayerDialog() {
+        if (isAdded() && getView() != null && getActivity() instanceof AppDialogActivity
+                && !getActivity().isFinishing()) {
+            ((AppDialogActivity) getActivity()).updatePersonalPlayerDialog();
+        }
+    }
+
+    boolean isPersonalCommentsPresentation() {
+        return getChildFragmentManager().findFragmentByTag(PREFERENCE_FRAGMENT_TAG)
+                instanceof CommentsPreferenceDialogFragment;
+    }
+
+    boolean isPersonalOverlayPresentation() { return personalPresentationFlag(PERSONAL_OVERLAY, mIsOverlay); }
+    boolean isPersonalTransparentPresentation() { return personalPresentationFlag(PERSONAL_TRANSPARENT, mIsTransparent); }
+
+    private boolean personalPresentationFlag(String key, boolean fallback) {
+        Fragment visible = getChildFragmentManager().findFragmentByTag(PREFERENCE_FRAGMENT_TAG);
+        return visible != null && visible.getArguments() != null
+                ? visible.getArguments().getBoolean(key, fallback) : fallback;
     }
 
     @Override
@@ -268,6 +313,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
     @Override
     public void clearBackstack() {
         // this manager holds entire back stack
+        stopObservingPersonalBackstack();
         Helpers.setField(this, "mChildFragmentManager", null);
     }
 
