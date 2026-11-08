@@ -147,6 +147,12 @@ application of the legacy comments transform.
 
 ## Validation and remaining gaps
 
+The subsequent [player feature parity audit](player-feature-parity.md) maps all original
+actions, long actions, shared controller behavior and native Shorts routes. It also records
+the hidden-transport fallback and live Advanced-row refresh changes and their focused
+regression tests. Its source evidence and final-APK checklist supplement the earlier
+device results below.
+
 Integrated debug validation on 2026-11-08 at `f8a15d7` passed assemble (2m57s),
 lint (0 errors, 305 retained warnings, no new issues) and four quality-options
 tests through Gradle. The debug APK upgraded the target TV while retaining its

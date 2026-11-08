@@ -63,8 +63,10 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.VideoStatsAction;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.VideoZoomAction;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -101,6 +103,9 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private final Action mPersonalSettingsAction;
     private String mPersonalQualityInfo;
     private final Map<Integer, UiOptionItem.DynamicDescription> mPersonalSettingItems = new HashMap<>();
+    private final Map<Action, UiOptionItem.DynamicDescription> mPersonalAdvancedItems = new HashMap<>();
+    private final Map<Action, UiOptionItem.DynamicDescription> mPersonalOptionsItems = new HashMap<>();
+    private Action mPersonalPlayPauseAction;
 
     public VideoPlayerGlue(
             Context context,
@@ -156,11 +161,16 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     @Override
     protected void onCreatePrimaryActions(ArrayObjectAdapter adapter) {
         if (PersonalPlayerPresentation.isEnabled(getContext())) {
+            // Keep the superclass-owned action even when its bar button is hidden. Advanced
+            // must dispatch that same object so the engine and play/pause state stay in sync.
+            ArrayObjectAdapter transport = new ArrayObjectAdapter();
+            super.onCreatePrimaryActions(transport);
+            mPersonalPlayPauseAction = (Action) transport.get(0);
             if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_PREVIOUS)) {
                 adapter.add(mSkipPreviousAction);
             }
             if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_PLAY_PAUSE)) {
-                super.onCreatePrimaryActions(adapter);
+                adapter.add(mPersonalPlayPauseAction);
             }
             if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_NEXT)) {
                 adapter.add(mSkipNextAction);
@@ -298,6 +308,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         if (!dispatchAction(action)) {
             // Super class handles play/pause and delegates to abstract methods next()/previous().
             super.onActionClicked(action);
+            refreshPersonalSettingDescriptions();
         }
     }
 
@@ -386,7 +397,23 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
 
     private void showPersonalAdvancedSettings() {
         AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
+        for (UiOptionItem item : createPersonalAdvancedActions()) {
+            dialog.appendSingleButton(item);
+        }
+        for (UiOptionItem item : createPersonalAdvancedOptions()) {
+            dialog.appendSingleButton(item);
+        }
+        dialog.showDialog(getContext().getString(R.string.personal_player_advanced));
+    }
+
+    /** Original action models, independent of the visible bars and their 12-control limit. */
+    List<UiOptionItem.DynamicDescription> createPersonalAdvancedActions() {
         Set<Action> actions = new LinkedHashSet<>();
+        actions.add(mSkipPreviousAction);
+        if (mPersonalPlayPauseAction != null) {
+            actions.add(mPersonalPlayPauseAction);
+        }
+        actions.add(mSkipNextAction);
         int[] order = {R.id.lb_control_high_quality, R.id.lb_control_closed_captioning,
                 R.id.action_video_speed, R.id.action_repeat, R.id.action_video_stats,
                 R.id.action_content_block, R.id.action_playback_queue, R.id.action_playlist_add,
@@ -403,31 +430,53 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         }
         // Future SmartTube actions also remain available when upstream extends this map.
         actions.addAll(mActions.values());
+        List<UiOptionItem.DynamicDescription> result = new ArrayList<>();
         for (Action action : actions) {
-            dialog.appendSingleButton(new UiOptionItem() {
-                @Override public CharSequence getTitle() { return action.getLabel1(); }
-                @Override public CharSequence getDescription() {
-                    return action instanceof TwoStateAction
-                            ? getContext().getString(getActionIndex(action) == TwoStateAction.INDEX_OFF
-                            ? R.string.personal_player_off : R.string.personal_player_on) : action.getLabel2();
-                }
-                @Override public void onSelect(boolean selected) { onActionClicked(action); }
-                @Override public Object getData() { return action; }
-            });
+            UiOptionItem.DynamicDescription item = mPersonalAdvancedItems.get(action);
+            if (item == null) {
+                item = new UiOptionItem.DynamicDescription() {
+                    @Override public CharSequence getTitle() { return action.getLabel1(); }
+                    @Override public CharSequence getDescription() {
+                        return action instanceof TwoStateAction
+                                ? getContext().getString(getActionIndex(action) == TwoStateAction.INDEX_OFF
+                                ? R.string.personal_player_off : R.string.personal_player_on) : action.getLabel2();
+                    }
+                    @Override public void onSelect(boolean selected) { onActionClicked(action); }
+                    @Override public Object getData() { return action; }
+                };
+                mPersonalAdvancedItems.put(action, item);
+            }
+            result.add(item);
         }
+        return result;
+    }
+
+    /** Every upstream long-action handler also has a command usable without holding OK. */
+    List<UiOptionItem.DynamicDescription> createPersonalAdvancedOptions() {
         int[] longActions = {R.id.lb_control_closed_captioning, R.id.action_video_speed,
                 R.id.action_repeat, R.id.action_screen_dimming, R.id.action_subscribe,
                 R.id.action_channel, R.id.action_sound_off, R.id.action_afr,
                 R.id.action_chat, R.id.action_content_block};
+        List<UiOptionItem.DynamicDescription> result = new ArrayList<>();
         for (int id : longActions) {
             Action action = mActions.get(id);
             if (action != null) {
-                dialog.appendSingleButton(UiOptionItem.from(getContext().getString(
-                        R.string.personal_player_action_options, action.getLabel1()),
-                        option -> dispatchPersonalOptions(action), false, action));
+                UiOptionItem.DynamicDescription item = mPersonalOptionsItems.get(action);
+                if (item == null) {
+                    item = new UiOptionItem.DynamicDescription() {
+                        @Override public CharSequence getTitle() {
+                            return getContext().getString(R.string.personal_player_action_options, action.getLabel1());
+                        }
+                        @Override public CharSequence getDescription() { return null; }
+                        @Override public void onSelect(boolean selected) { dispatchPersonalOptions(action); }
+                        @Override public Object getData() { return action; }
+                    };
+                    mPersonalOptionsItems.put(action, item);
+                }
+                result.add(item);
             }
         }
-        dialog.showDialog(getContext().getString(R.string.personal_player_advanced));
+        return result;
     }
 
     private void dispatchPersonalOptions(Action action) {
@@ -446,6 +495,18 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         for (UiOptionItem.DynamicDescription item : mPersonalSettingItems.values()) {
             item.notifyDescriptionChanged();
         }
+        for (UiOptionItem.DynamicDescription item : mPersonalAdvancedItems.values()) {
+            item.notifyDescriptionChanged();
+        }
+        for (UiOptionItem.DynamicDescription item : mPersonalOptionsItems.values()) {
+            item.notifyDescriptionChanged();
+        }
+    }
+
+    @Override
+    protected void onPlayStateChanged() {
+        super.onPlayStateChanged();
+        refreshPersonalSettingDescriptions();
     }
 
     @Override
@@ -646,6 +707,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
             notifyActionChanged(
                     action,
                     (ArrayObjectAdapter) getControlsRow().getSecondaryActionsAdapter());
+            refreshPersonalSettingDescriptions();
         }
     }
 

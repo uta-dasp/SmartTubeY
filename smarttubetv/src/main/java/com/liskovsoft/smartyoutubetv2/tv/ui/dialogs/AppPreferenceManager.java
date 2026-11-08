@@ -188,6 +188,11 @@ public class AppPreferenceManager {
         }
 
         void refreshDescription() {
+            // Actions can change their next-command label and icon as well as their state.
+            setTitle(mItem.getTitle());
+            if (mItem.getData() instanceof androidx.leanback.widget.Action) {
+                setIcon(((androidx.leanback.widget.Action) mItem.getData()).getIcon());
+            }
             notifyChanged();
         }
     }
