@@ -62,7 +62,7 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
 
         switch (mFragmentType) {
             case BrowseSection.TYPE_ROW:
-                fragment = new VideoRowsFragment();
+                fragment = createRowsFragment();
                 break;
             case BrowseSection.TYPE_GRID:
                 fragment = new VideoGridFragment();
@@ -93,6 +93,10 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
         }
 
         throw new IllegalArgumentException(String.format("Invalid row %s", rowObj));
+    }
+
+    protected Fragment createRowsFragment() {
+        return new VideoRowsFragment();
     }
 
     public void updateCurrentFragment(SettingsGroup group) {

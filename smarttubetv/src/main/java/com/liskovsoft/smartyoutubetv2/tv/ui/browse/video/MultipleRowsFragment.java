@@ -52,13 +52,14 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     private ShortsCardPresenter mShortsPresenter;
     private int mSelectedRowIndex = -1;
     private ChannelHeaderCallback mChannelHeaderCallback;
+    private Video mPendingSelectedItem;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
         mMainPresenter = getMainPresenter();
-        mCardPresenter = new VideoCardPresenter();
+        mCardPresenter = createVideoCardPresenter();
         mShortsPresenter = new ShortsCardPresenter();
         mBackgroundManager = ((LeanbackActivity) getActivity()).getBackgroundManager();
 
@@ -72,6 +73,20 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     }
 
     protected abstract VideoGroupPresenter getMainPresenter();
+
+    protected VideoCardPresenter createVideoCardPresenter() {
+        return new VideoCardPresenter();
+    }
+
+    protected ListRowPresenter createListRowPresenter() {
+        return new CustomListRowPresenter();
+    }
+
+    @Override
+    public void onViewCreated(android.view.View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        restoreSelectedItem();
+    }
 
     private void applyPendingUpdates() {
         // prevent modification within update method
@@ -90,7 +105,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         }
 
         if (mRowsAdapter == null) {
-            mRowPresenter = new CustomListRowPresenter();
+            mRowPresenter = createListRowPresenter();
             mRowPresenter.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
 
             ClassPresenterSelector presenterSelector = new ClassPresenterSelector();
@@ -275,6 +290,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         }
 
         restorePosition();
+        restoreSelectedItem();
     }
 
     private void restorePosition() {
@@ -304,7 +320,50 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
     @Override
     public void selectItem(Video item) {
-        // NOP
+        mPendingSelectedItem = item;
+        restoreSelectedItem();
+    }
+
+    private void restoreSelectedItem() {
+        if (mPendingSelectedItem == null || mRowsAdapter == null || getVerticalGridView() == null) {
+            return;
+        }
+
+        int fallbackRow = -1;
+        int fallbackColumn = -1;
+        VideoGroup selectedGroup = mPendingSelectedItem.getGroup();
+        for (int rowIndex = 0; rowIndex < mRowsAdapter.size(); rowIndex++) {
+            Object row = mRowsAdapter.get(rowIndex);
+            if (!(row instanceof ListRow)) {
+                continue;
+            }
+            androidx.leanback.widget.ObjectAdapter adapter = ((ListRow) row).getAdapter();
+            for (int column = 0; column < adapter.size(); column++) {
+                Object candidate = adapter.get(column);
+                if (!mPendingSelectedItem.equals(candidate)) {
+                    continue;
+                }
+                if (fallbackRow == -1) {
+                    fallbackRow = rowIndex;
+                    fallbackColumn = column;
+                }
+                if (selectedGroup == null || (candidate instanceof Video &&
+                        ((Video) candidate).getGroup() == selectedGroup)) {
+                    fallbackRow = rowIndex;
+                    fallbackColumn = column;
+                    rowIndex = mRowsAdapter.size();
+                    break;
+                }
+            }
+        }
+        if (fallbackRow != -1) {
+            ListRowPresenter.SelectItemViewHolderTask task =
+                    new ListRowPresenter.SelectItemViewHolderTask(fallbackColumn);
+            task.setSmoothScroll(false);
+            setSelectedPosition(fallbackRow, false, task);
+            mPendingSelectedItem = null;
+            mSelectedRowIndex = -1;
+        }
     }
 
     /**

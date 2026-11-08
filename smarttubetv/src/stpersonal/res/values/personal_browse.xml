@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="personal_browse_content" />
+    <string name="personal_search">Search</string>
+    <string name="personal_voice_search">Voice search</string>
+    <string name="personal_guest">Account</string>
+    <string name="personal_brand">SmartTubeY</string>
+    <color name="card_default_text">#AAAAAA</color>
+    <color name="card_selected_text_grey">#F1F1F1</color>
+    <dimen name="card_width">264dp</dimen>
+    <dimen name="card_height">148.5dp</dimen>
+    <dimen name="lb_browse_item_horizontal_spacing">18dp</dimen>
+    <dimen name="lb_browse_item_vertical_spacing">24dp</dimen>
+    <dimen name="lb_rounded_rect_corner_radius">9dp</dimen>
+</resources>
