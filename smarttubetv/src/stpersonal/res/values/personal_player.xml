@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="personal_player_presentation">true</bool>
+    <!-- Measured at 1920x1080 / 320dpi. Keep video output independent of this UI coordinate space. -->
+    <dimen name="lb_playback_controls_padding_bottom">112dp</dimen>
+    <dimen name="lb_control_button_diameter">36dp</dimen>
+    <dimen name="lb_control_button_height">36dp</dimen>
+    <dimen name="lb_control_button_secondary_diameter">36dp</dimen>
+    <dimen name="lb_control_button_secondary_height">36dp</dimen>
+    <dimen name="lb_control_icon_width">18dp</dimen>
+    <dimen name="lb_control_icon_height">18dp</dimen>
+    <dimen name="lb_details_description_title_text_size">20sp</dimen>
+    <dimen name="lb_details_description_title_resized_text_size">20sp</dimen>
+    <dimen name="lb_details_description_title_baseline">20dp</dimen>
+    <dimen name="lb_details_description_title_line_spacing">24dp</dimen>
+    <dimen name="lb_details_description_under_title_baseline_margin">25dp</dimen>
+    <dimen name="lb_details_description_subtitle_text_size">12sp</dimen>
+    <dimen name="lb_playback_controls_time_text_size">10sp</dimen>
+    <dimen name="lb_playback_transport_progressbar_bar_height">4dp</dimen>
+    <dimen name="lb_playback_transport_progressbar_active_bar_height">5dp</dimen>
+    <dimen name="lb_playback_transport_progressbar_active_radius">5dp</dimen>
+</resources>

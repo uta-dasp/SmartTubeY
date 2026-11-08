@@ -119,8 +119,18 @@ public class AppPreferenceManager {
             Preference preference = new Preference(mContext);
             preference.setPersistent(false);
             preference.setTitle(item.getTitle());
+            if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(mContext)) {
+                preference.setSummary(item.getDescription());
+                if (item.getData() instanceof androidx.leanback.widget.Action) {
+                    preference.setIcon(((androidx.leanback.widget.Action) item.getData()).getIcon());
+                }
+            }
             preference.setOnPreferenceClickListener(pref -> {
                 item.onSelect(true);
+                if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(mContext)) {
+                    preference.setTitle(item.getTitle());
+                    preference.setSummary(item.getDescription());
+                }
                 return true;
             });
 

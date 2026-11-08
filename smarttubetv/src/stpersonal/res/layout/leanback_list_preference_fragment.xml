@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_frame" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#0F0F0F" android:orientation="vertical" android:transitionGroup="false">
+    <FrameLayout android:id="@+id/decor_title_container" android:layout_width="match_parent"
+        android:layout_height="60dp" android:background="#0F0F0F" android:transitionGroup="false">
+        <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.marqueetextviewcompat.TitleMarqueeTextViewCompat
+            android:id="@+id/decor_title" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:paddingTop="20dp" android:textSize="18sp" android:textColor="#F1F1F1"
+            android:fontFamily="sans-serif-medium" android:gravity="top" android:maxLines="2" android:ellipsize="end" />
+    </FrameLayout>
+    <TextView android:id="@android:id/message" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textSize="12sp" android:textColor="#B3B3B3" android:paddingBottom="12dp" android:visibility="gone" />
+    <androidx.leanback.widget.VerticalGridView android:id="@android:id/list"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:transitionGroup="true" />
+</LinearLayout>

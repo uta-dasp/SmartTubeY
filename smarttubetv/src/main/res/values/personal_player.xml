@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="personal_player_presentation">false</bool>
+    <item name="personal_player_settings" type="id" />
+    <string name="personal_player_settings">Settings</string>
+    <string name="personal_player_advanced">Advanced</string>
+    <string name="personal_player_description">Description</string>
+    <string name="personal_player_quality">Quality</string>
+    <string name="personal_player_captions">Captions</string>
+    <string name="personal_player_audio">Audio</string>
+    <string name="personal_player_speed">Speed</string>
+    <string name="personal_player_repeat">Repeat</string>
+    <string name="personal_player_statistics">Stats for nerds</string>
+    <string name="personal_player_on">On</string>
+    <string name="personal_player_off">Off</string>
+    <string name="personal_player_normal">Normal</string>
+    <string name="personal_player_action_options">%1$s options</string>
+</resources>

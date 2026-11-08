@@ -1,0 +1,11 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_frame" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#0F0F0F" android:orientation="vertical" android:transitionGroup="false">
+    <FrameLayout android:id="@+id/decor_title_container" android:layout_width="match_parent"
+        android:layout_height="60dp" android:background="#0F0F0F" android:transitionGroup="false">
+        <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.marqueetextviewcompat.TitleMarqueeTextViewCompat
+            android:id="@+id/decor_title" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:paddingTop="20dp" android:textSize="18sp" android:textColor="#F1F1F1"
+            android:fontFamily="sans-serif-medium" android:gravity="top" android:maxLines="2" android:ellipsize="end" />
+    </FrameLayout>
+</LinearLayout>

@@ -14,6 +14,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tooltips;
 
 import android.text.TextUtils;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,7 @@ import androidx.leanback.widget.PlaybackControlsRow;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.PresenterSelector;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.PaddingAction;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
 
 /**
  * Displays primary and secondary controls for a {@link PlaybackControlsRow}.
@@ -131,6 +133,44 @@ public class ControlButtonPresenterSelector extends PresenterSelector {
                     TooltipCompatHandler.setTooltipText(vh.mFocusableView, action.getLabel1());
                 }
             }
+            if (PersonalPlayerPresentation.isEnabled(vh.view.getContext())) {
+                bindPersonalButton(vh, action);
+            }
+        }
+
+        private void bindPersonalButton(ActionViewHolder vh, Action action) {
+            int actionId = (int) action.getId();
+            boolean info = actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_info;
+            boolean subscribe = actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_subscribe;
+            boolean playPause = action instanceof PlaybackControlsRow.PlayPauseAction;
+            float density = vh.view.getResources().getDisplayMetrics().density;
+            ViewGroup.LayoutParams buttonParams = vh.mFocusableView.getLayoutParams();
+            buttonParams.width = Math.round(density * (info ? 98 : subscribe ? 90 : playPause ? 48 : 36));
+            buttonParams.height = Math.round(density * (playPause ? 48 : 36));
+            vh.mFocusableView.setLayoutParams(buttonParams);
+            ViewGroup.LayoutParams iconParams = vh.mIcon.getLayoutParams();
+            iconParams.width = iconParams.height = Math.round(density * (playPause ? 24 : 18));
+            vh.mIcon.setLayoutParams(iconParams);
+            vh.mIcon.setVisibility(info || subscribe ? View.GONE : View.VISIBLE);
+            if (vh.mLabel != null && (info || subscribe)) {
+                vh.mLabel.setText(info ? vh.view.getContext().getString(
+                        com.liskovsoft.smartyoutubetv2.tv.R.string.personal_player_description) : action.getLabel1());
+            }
+            View.OnFocusChangeListener focusStyle = (view, focused) -> {
+                if (actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_channel) {
+                    vh.mIcon.clearColorFilter();
+                } else if (focused) {
+                    vh.mIcon.setColorFilter(Color.BLACK);
+                } else {
+                    // Preserve upstream multi-action highlight colors when not focused.
+                    vh.mIcon.clearColorFilter();
+                }
+                if (vh.mLabel != null) {
+                    vh.mLabel.setTextColor(focused ? Color.BLACK : Color.rgb(241, 241, 241));
+                }
+            };
+            vh.mFocusableView.setOnFocusChangeListener(focusStyle);
+            focusStyle.onFocusChange(vh.mFocusableView, vh.mFocusableView.hasFocus());
         }
 
         @Override

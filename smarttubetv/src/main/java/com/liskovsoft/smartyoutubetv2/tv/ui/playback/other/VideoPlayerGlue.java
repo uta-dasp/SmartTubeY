@@ -23,6 +23,11 @@ import com.bumptech.glide.request.transition.Transition;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.MaxControlsVideoPlayerGlue;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowPresenter;
@@ -56,7 +61,9 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.VideoZoomAction;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -88,6 +95,8 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private final PlayerTweaksData mPlayerTweaksData;
     private final GeneralData mGeneralData;
     private int mPreviousAction = KeyEvent.ACTION_UP;
+    private final Action mPersonalSettingsAction;
+    private String mPersonalQualityInfo;
 
     public VideoPlayerGlue(
             Context context,
@@ -134,10 +143,26 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         putAction(new RotateAction(context));
         putAction(new FlipAction(context));
         putAction(new SoundOffAction(context));
+
+        mPersonalSettingsAction = new Action(R.id.personal_player_settings,
+                context.getString(R.string.personal_player_settings));
+        mPersonalSettingsAction.setIcon(ContextCompat.getDrawable(context, R.drawable.personal_player_settings));
     }
 
     @Override
     protected void onCreatePrimaryActions(ArrayObjectAdapter adapter) {
+        if (PersonalPlayerPresentation.isEnabled(getContext())) {
+            if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_PREVIOUS)) {
+                adapter.add(mSkipPreviousAction);
+            }
+            if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_PLAY_PAUSE)) {
+                super.onCreatePrimaryActions(adapter);
+            }
+            if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_NEXT)) {
+                adapter.add(mSkipNextAction);
+            }
+            return;
+        }
         // Order matters, super.onCreatePrimaryActions() will create the play / pause action.
         // Will display as follows:
         // play/pause, previous, rewind, fast forward, next
@@ -197,6 +222,18 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
 
     @Override
     protected void onCreateSecondaryActions(ArrayObjectAdapter adapter) {
+        if (PersonalPlayerPresentation.isEnabled(getContext())) {
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_OPEN_CHANNEL, R.id.action_channel);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_VIDEO_INFO, R.id.action_info);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_SUBSCRIBE, R.id.action_subscribe);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_LIKE, R.id.action_thumbs_up);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_DISLIKE, R.id.action_thumbs_down);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_ADD_TO_PLAYLIST, R.id.action_playlist_add);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_CONTENT_BLOCK, R.id.action_content_block);
+            addPersonalAction(adapter, PlayerTweaksData.PLAYER_BUTTON_SUBTITLES, R.id.lb_control_closed_captioning);
+            adapter.add(mPersonalSettingsAction);
+            return;
+        }
         // Does nothing
         super.onCreateSecondaryActions(adapter);
 
@@ -250,10 +287,123 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
 
     @Override
     public void onActionClicked(Action action) {
+        if (action == mPersonalSettingsAction) {
+            showPersonalSettings();
+            return;
+        }
         if (!dispatchAction(action)) {
             // Super class handles play/pause and delegates to abstract methods next()/previous().
             super.onActionClicked(action);
         }
+    }
+
+    private void addPersonalAction(ArrayObjectAdapter adapter, int button, int id) {
+        if (mPlayerTweaksData.isPlayerButtonEnabled(button)) {
+            adapter.add(mActions.get(id));
+        }
+    }
+
+    /** Keep every original action reachable without exceeding ControlBarPresenter's 12-item limit. */
+    private void showPersonalSettings() {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
+        appendPersonalSetting(dialog, R.string.personal_player_quality, R.id.lb_control_high_quality, false);
+        appendPersonalSetting(dialog, R.string.personal_player_captions, R.id.lb_control_closed_captioning, true);
+        appendPersonalSetting(dialog, R.string.personal_player_audio, R.id.lb_control_high_quality, false);
+        appendPersonalSetting(dialog, R.string.personal_player_speed, R.id.action_video_speed, true);
+        appendPersonalSetting(dialog, R.string.personal_player_repeat, R.id.action_repeat, true);
+        appendPersonalSetting(dialog, R.string.personal_player_statistics, R.id.action_video_stats, false);
+        dialog.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.personal_player_advanced),
+                option -> showPersonalAdvancedSettings()));
+        dialog.showDialog(getContext().getString(R.string.personal_player_settings));
+    }
+
+    private void appendPersonalSetting(AppDialogPresenter dialog, int title, int id, boolean longAction) {
+        Action action = mActions.get(id);
+        if (action != null) {
+            CharSequence description = personalSettingDescription(title, action);
+            dialog.appendSingleButton(UiOptionItem.from(getContext().getString(title), description,
+                    option -> {
+                        if (longAction) {
+                            dispatchPersonalOptions(action);
+                        } else {
+                            onActionClicked(action);
+                        }
+                    }, false, action));
+        }
+    }
+
+    private CharSequence personalSettingDescription(int title, Action action) {
+        PlaybackView player = PlaybackPresenter.instance(getContext()).getView();
+        if (title == R.string.personal_player_quality) {
+            return mPersonalQualityInfo;
+        }
+        if (player != null && title == R.string.personal_player_speed) {
+            float speed = player.getSpeed();
+            return Math.abs(speed - 1f) < 0.001f ? getContext().getString(R.string.personal_player_normal) : speed + "x";
+        }
+        if (player != null && (title == R.string.personal_player_captions || title == R.string.personal_player_audio)) {
+            FormatItem format = title == R.string.personal_player_captions ? player.getSubtitleFormat() : player.getAudioFormat();
+            return format == null || format.isDefault() ? getContext().getString(R.string.personal_player_off) : format.getTitle();
+        }
+        return action instanceof TwoStateAction ? getContext().getString(getActionIndex(action) == TwoStateAction.INDEX_OFF
+                ? R.string.personal_player_off : R.string.personal_player_on) : action.getLabel1();
+    }
+
+    private void showPersonalAdvancedSettings() {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
+        Set<Action> actions = new LinkedHashSet<>();
+        int[] order = {R.id.lb_control_high_quality, R.id.lb_control_closed_captioning,
+                R.id.action_video_speed, R.id.action_repeat, R.id.action_video_stats,
+                R.id.action_content_block, R.id.action_playback_queue, R.id.action_playlist_add,
+                R.id.action_afr, R.id.action_pip, R.id.action_chat, R.id.action_screen_dimming,
+                R.id.action_seek_interval, R.id.action_video_zoom, R.id.action_rotate,
+                R.id.action_flip, R.id.action_sound_off, R.id.action_share, R.id.action_search,
+                R.id.action_channel, R.id.action_info, R.id.action_subscribe,
+                R.id.action_thumbs_up, R.id.action_thumbs_down};
+        for (int id : order) {
+            Action action = mActions.get(id);
+            if (action != null) {
+                actions.add(action);
+            }
+        }
+        // Future SmartTube actions also remain available when upstream extends this map.
+        actions.addAll(mActions.values());
+        for (Action action : actions) {
+            dialog.appendSingleButton(new UiOptionItem() {
+                @Override public CharSequence getTitle() { return action.getLabel1(); }
+                @Override public CharSequence getDescription() {
+                    return action instanceof TwoStateAction
+                            ? getContext().getString(getActionIndex(action) == TwoStateAction.INDEX_OFF
+                            ? R.string.personal_player_off : R.string.personal_player_on) : action.getLabel2();
+                }
+                @Override public void onSelect(boolean selected) { onActionClicked(action); }
+                @Override public Object getData() { return action; }
+            });
+        }
+        int[] longActions = {R.id.lb_control_closed_captioning, R.id.action_video_speed,
+                R.id.action_repeat, R.id.action_screen_dimming, R.id.action_subscribe,
+                R.id.action_channel, R.id.action_sound_off, R.id.action_afr,
+                R.id.action_chat, R.id.action_content_block};
+        for (int id : longActions) {
+            Action action = mActions.get(id);
+            if (action != null) {
+                dialog.appendSingleButton(UiOptionItem.from(getContext().getString(
+                        R.string.personal_player_action_options, action.getLabel1()),
+                        option -> dispatchPersonalOptions(action), false, action));
+            }
+        }
+        dialog.showDialog(getContext().getString(R.string.personal_player_advanced));
+    }
+
+    private void dispatchPersonalOptions(Action action) {
+        // An explicit options command remains usable when physical OK-long-press is disabled.
+        mActionListener.onLongAction((int) action.getId(), getActionIndex(action));
+    }
+
+    @Override
+    public void setQualityInfo(String info) {
+        super.setQualityInfo(info);
+        mPersonalQualityInfo = info;
     }
 
     @Override
@@ -514,6 +664,13 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
             }
         }
 
+        if (action == null && PersonalPlayerPresentation.isEnabled(getContext())) {
+            for (Action candidate : mActions.values()) {
+                if (candidate.respondsToKeyCode(keyCode)) {
+                    return candidate;
+                }
+            }
+        }
         return action;
     }
 

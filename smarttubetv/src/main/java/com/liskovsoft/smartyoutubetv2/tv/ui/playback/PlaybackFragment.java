@@ -81,6 +81,8 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.mod.SeekModePlaybackFragmen
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.mod.surface.SurfacePlaybackFragmentGlueHost;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.BackboneQueueNavigator;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.VideoPlayerGlue;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerDialogPresentation;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.VideoPlayerGlue.OnActionClickedListener;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.previewtimebar.StoryboardSeekDataProvider;
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.chat.LiveChatView;
@@ -97,7 +99,8 @@ import java.util.Map;
  * Plays selected video, loads playlist and related videos, and delegates playback to
  * {@link VideoPlayerGlue}.
  */
-public class PlaybackFragment extends SeekModePlaybackFragment implements PlaybackView {
+public class PlaybackFragment extends SeekModePlaybackFragment implements PlaybackView,
+        com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.DialogPreviewHost {
     private static final String TAG = PlaybackFragment.class.getSimpleName();
     private static final String SELECTED_VIDEO_ID = "SelectedVideoId";
     private static final int UPDATE_DELAY_MS = 100;
@@ -125,6 +128,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     private Boolean mIsControlsShownPreviously;
     private Video mPendingFocus;
     private String mSelectedVideoId;
+    private PersonalPlayerDialogPresentation mPersonalDialogPresentation;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -172,7 +176,31 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         // ProgressBar.setRootView already called at this moment.
         ProgressBarManager.setup(getProgressBarManager(), (ViewGroup) root);
 
+        if (PersonalPlayerPresentation.isEnabled(getContext())) {
+            mPersonalDialogPresentation = new PersonalPlayerDialogPresentation(root);
+        }
+
         return root;
+    }
+
+    public void setPlayerDialogVisible(Object owner, boolean visible) {
+        if (mPersonalDialogPresentation != null) {
+            mPersonalDialogPresentation.setVisible(owner, visible);
+        }
+    }
+
+    @Override
+    public boolean isActivityManagedDialogPreviewEnabled() {
+        return PersonalPlayerPresentation.isEnabled(getContext());
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (mPersonalDialogPresentation != null) {
+            mPersonalDialogPresentation.release();
+            mPersonalDialogPresentation = null;
+        }
+        super.onDestroyView();
     }
 
     @Override

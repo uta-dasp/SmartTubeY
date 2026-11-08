@@ -44,6 +44,9 @@ public abstract class BasePlayerController implements PlayerEventListener {
         if (getPlayer() == null || settingsPresenter.isOverlay() || getPlayerTweaksData().isDontResizeVideoToFitDialogEnabled()) {
             return;
         }
+        if (isActivityManagedDialogPreview(settingsPresenter)) {
+            return;
+        }
         FormatItem videoFormat = getPlayer().getVideoFormat();
         Format format = videoFormat != null && videoFormat.getTrack() != null ? videoFormat.getTrack().format : null;
         if (format == null) {
@@ -71,9 +74,19 @@ public abstract class BasePlayerController implements PlayerEventListener {
         if (getPlayer() == null || getPlayerTweaksData().isDontResizeVideoToFitDialogEnabled()) {
             return;
         }
+        if (isActivityManagedDialogPreview(getAppDialogPresenter())) {
+            return;
+        }
         getPlayer().setZoomPercents(getPlayerData().getZoomPercents());
         getPlayer().setVideoGravity(Gravity.CENTER);
     };
+
+    private boolean isActivityManagedDialogPreview(AppDialogPresenter dialog) {
+        return getPlayer() instanceof com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.DialogPreviewHost
+                && ((com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.DialogPreviewHost) getPlayer())
+                .isActivityManagedDialogPreviewEnabled()
+                && !dialog.isComments() && !dialog.isTransparent() && !dialog.isOverlay();
+    }
 
     public void setMainController(PlaybackPresenter mainController) {
         mMainController = mainController;

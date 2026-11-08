@@ -1,0 +1,10 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content" android:layout_height="wrap_content">
+    <ImageView android:id="@+id/button" android:layout_width="36dp" android:layout_height="36dp"
+        android:focusable="true" android:clickable="true" android:scaleType="fitXY"
+        android:src="@drawable/personal_player_button" />
+    <ImageView android:id="@+id/icon" android:layout_width="18dp" android:layout_height="18dp"
+        android:layout_gravity="center" android:importantForAccessibility="no" />
+    <TextView android:id="@+id/label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center" android:textSize="10sp" android:textColor="#F1F1F1" />
+</FrameLayout>

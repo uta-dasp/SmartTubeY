@@ -1037,6 +1037,11 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
 
     @Override
     protected RowPresenter.ViewHolder createRowViewHolder(ViewGroup parent) {
+        if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(parent.getContext())) {
+            mPlaybackControlsPresenter.setDefaultFocusToMiddle(true);
+            setProgressColor(Color.WHITE);
+            setSecondaryProgressColor(Color.rgb(110, 110, 110));
+        }
         View v = LayoutInflater.from(parent.getContext()).inflate(
                 com.liskovsoft.smartyoutubetv2.tv.R.layout.lb_playback_transport_controls_row, parent, false);
         ViewHolder vh = new ViewHolder(v, mDescriptionPresenter);

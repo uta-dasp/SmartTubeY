@@ -133,6 +133,9 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         mIsTransparent = stackIsEmpty ? isTransparent : mIsTransparent;
         mIsOverlay = isOverlay;
         mId = id;
+        if (getActivity() instanceof AppDialogActivity) {
+            ((AppDialogActivity) getActivity()).updatePersonalPlayerDialog();
+        }
 
         if (isExpandable && categories != null && categories.size() == 1) {
             OptionCategory category = categories.get(0);
@@ -142,6 +145,14 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         } else {
             AppPreferenceFragment fragment = buildPreferenceFragment(categories, title);
             startPreferenceFragment(fragment);
+        }
+        if (getActivity() instanceof AppDialogActivity && getView() != null) {
+            AppDialogActivity activity = (AppDialogActivity) getActivity();
+            getView().post(() -> {
+                if (isAdded() && !activity.isFinishing()) {
+                    activity.updatePersonalPlayerDialog();
+                }
+            });
         }
     }
 
