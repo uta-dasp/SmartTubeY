@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
+import android.widget.FrameLayout;
 import android.view.KeyEvent;
 import android.view.Gravity;
 
@@ -38,6 +39,8 @@ public class AppDialogActivity extends MotherActivity {
     private GlobalKeyTranslator mGlobalKeyTranslator;
     private PlaybackFragment mPersonalPlayerHost;
     private ViewGroup.LayoutParams mPersonalOriginalLayout;
+    private View mPersonalInnerPane;
+    private ViewGroup.LayoutParams mPersonalOriginalInnerLayout;
     private Drawable mPersonalOriginalBackground;
     private float mPersonalOriginalDimAmount;
     private int mPersonalOriginalDimFlag;
@@ -120,6 +123,14 @@ public class AppDialogActivity extends MotherActivity {
             return;
         }
         mPersonalOriginalLayout = panel.getLayoutParams();
+        mPersonalInnerPane = panel.findViewById(R.id.settings_preference_fragment_container);
+        if (mPersonalInnerPane != null) {
+            // AndroidX's inner pane is fixed at 360dp/end-aligned. It would extend 108px
+            // left of this 612px host on the reference TV and clip the title/row text.
+            mPersonalOriginalInnerLayout = mPersonalInnerPane.getLayoutParams();
+            mPersonalInnerPane.setLayoutParams(new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         mPersonalOriginalBackground = getWindow().getDecorView().getBackground();
         mPersonalOriginalDimAmount = getWindow().getAttributes().dimAmount;
         mPersonalOriginalDimFlag = getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_DIM_BEHIND;
@@ -148,6 +159,11 @@ public class AppDialogActivity extends MotherActivity {
             if (panel != null) {
                 panel.setLayoutParams(mPersonalOriginalLayout);
             }
+            if (mPersonalInnerPane != null && mPersonalOriginalInnerLayout != null) {
+                mPersonalInnerPane.setLayoutParams(mPersonalOriginalInnerLayout);
+            }
+            mPersonalInnerPane = null;
+            mPersonalOriginalInnerLayout = null;
             getWindow().setBackgroundDrawable(mPersonalOriginalBackground);
             getWindow().setFlags(mPersonalOriginalDimFlag, WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             getWindow().setDimAmount(mPersonalOriginalDimAmount);
