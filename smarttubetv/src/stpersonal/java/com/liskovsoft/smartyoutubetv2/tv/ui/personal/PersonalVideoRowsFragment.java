@@ -12,6 +12,7 @@ import androidx.leanback.widget.FocusHighlight;
 import androidx.leanback.widget.ListRowPresenter;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.RowHeaderPresenter;
+import androidx.leanback.widget.RowPresenter;
 
 import com.liskovsoft.smartyoutubetv2.tv.presenter.VideoCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.R;
@@ -28,7 +29,16 @@ public class PersonalVideoRowsFragment extends VideoRowsFragment {
 
     @Override
     protected ListRowPresenter createListRowPresenter() {
-        ListRowPresenter presenter = new ListRowPresenter(FocusHighlight.ZOOM_FACTOR_NONE, false);
+        ListRowPresenter presenter = new ListRowPresenter(FocusHighlight.ZOOM_FACTOR_NONE, false) {
+            @Override
+            protected void onRowViewSelected(RowPresenter.ViewHolder holder, boolean selected) {
+                super.onRowViewSelected(holder, selected);
+                if (holder.getHeaderViewHolder() != null) {
+                    TextView label = holder.getHeaderViewHolder().view.findViewById(R.id.row_header);
+                    if (label != null) label.setTextColor(selected ? 0xFFF1F1F1 : 0xFFAAAAAA);
+                }
+            }
+        };
         presenter.setSelectEffectEnabled(false);
         presenter.setShadowEnabled(false);
         presenter.enableChildRoundedCorners(false);
@@ -43,6 +53,7 @@ public class PersonalVideoRowsFragment extends VideoRowsFragment {
                     label.setTextSize(15);
                     label.setTextColor(0xFFAAAAAA);
                     label.setIncludeFontPadding(false);
+                    label.setTranslationY(PersonalVideoCardPresenter.dp(parent.getContext(), 6.5f));
                 }
                 return holder;
             }

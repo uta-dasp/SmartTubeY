@@ -153,7 +153,7 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
 
     private static CharSequence formatMetadata(Video video) {
         CharSequence metadata = video.getSecondTitle();
-        if (metadata == null || video.author == null) return metadata;
+        if (metadata == null) return null;
         String author = video.getAuthor();
         String text = metadata.toString();
         int separator = text.indexOf('\u2022');
