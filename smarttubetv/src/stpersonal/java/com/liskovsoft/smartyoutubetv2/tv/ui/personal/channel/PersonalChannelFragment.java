@@ -145,7 +145,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
             @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder holder,int position,int subposition){
                 boolean next=position>0;if(next==collapsed)return;collapsed=next;
                 // Official TV collapses the hero on entering shelves; channel search remains fixed.
-                view.post(()->{if(wrapper!=null){setAlignment(collapsed?dp(130.5f):0);banner.setAlpha(collapsed?0:1);if(heroHolder!=null)heroHolder.view.setAlpha(collapsed?0:1);logBannerState("selection");}});
+                view.post(()->{if(wrapper!=null){setAlignment(collapsed?dp(130.5f):0);banner.setAlpha(collapsed?0f:1f);if(heroHolder!=null)heroHolder.view.setAlpha(collapsed?0:1);logBannerState("selection");}});
             }
         });
         getVerticalGridView().setOnKeyInterceptListener(event->{
@@ -156,7 +156,8 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
 
     @Override public void clear(){
         super.clear();ensureHero();
-        if(wrapper!=null){setAlignment(0);collapsed=false;banner.setAlpha(1);ensureChannel();}
+        // ImageView.setAlpha(int) is an old 0..255 image-opacity API, so use float view alpha.
+        if(wrapper!=null){setAlignment(0);collapsed=false;banner.setAlpha(1f);ensureChannel();}
     }
 
     @Override public void update(VideoGroup group){
@@ -253,7 +254,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
         android.util.Log.i(BANNER_TAG,event+" view="+banner.getWidth()+"x"+banner.getHeight()+
                 " visibility="+banner.getVisibility()+" shown="+banner.isShown()+" alpha="+banner.getAlpha()+
                 " drawable="+(banner.getDrawable()!=null)+" collapsed="+collapsed+" row="+getSelectedPosition()+
-                " rows_background="+(rowsBackground!=null)+" rows_opacity="+(rowsBackground==null?0:rowsBackground.getOpacity()));
+                " image_alpha="+banner.getImageAlpha()+" rows_background="+(rowsBackground!=null)+" rows_opacity="+(rowsBackground==null?0:rowsBackground.getOpacity()));
     }
 
     private void renderHero(){
