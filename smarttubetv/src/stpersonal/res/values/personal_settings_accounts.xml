@@ -1,0 +1,27 @@
+<resources>
+    <string name="personal_settings_open">Open options</string>
+    <string name="personal_settings_future_description">Open this category to view its available settings.</string>
+    <string name="personal_settings_account_description">Choose an account, sign in, and manage account-specific settings.</string>
+    <string name="personal_settings_remote_description">Link a phone or other supported remote to control playback.</string>
+    <string name="personal_settings_language_description">Set the app language, content country, and preferred content language.</string>
+    <string name="personal_settings_general_description">Configure startup, history, navigation, and app behavior.</string>
+    <string name="personal_settings_interface_description">Adjust navigation sections, cards, theme, text size, and focus behavior.</string>
+    <string name="personal_settings_player_description">Choose playback defaults, controls, seeking, audio, and background behavior.</string>
+    <string name="personal_settings_afr_description">Configure display refresh rate matching and supported resolution switching.</string>
+    <string name="personal_settings_subtitles_description">Choose caption language, size, style, and subtitle behavior.</string>
+    <string name="personal_settings_search_description">Manage search suggestions, history, and input behavior.</string>
+    <string name="personal_settings_sponsor_description">Set skip categories, channel exclusions, and SponsorBlock behavior.</string>
+    <string name="personal_settings_dearrow_description">Configure DeArrow title and thumbnail replacements.</string>
+    <string name="personal_settings_backup_description">Back up and restore app settings using the available destinations.</string>
+    <string name="personal_settings_about_description">View app version and project information.</string>
+    <string name="personal_settings_language_status">Interface language: %1$s</string>
+    <string name="personal_settings_version_status">%1$s · Version %2$s</string>
+    <string name="personal_settings_account_status">Current account: %1$s</string>
+    <string name="personal_accounts_add">Add account</string>
+    <string name="personal_accounts_manage">Manage accounts</string>
+    <string name="personal_accounts_guest">Watch as guest</string>
+    <string name="personal_accounts_saved">Saved in SmartTubeY</string>
+    <string name="personal_accounts_selected">Current account</string>
+    <string name="personal_accounts_empty">Sign in to add your subscriptions and history.</string>
+    <string name="personal_accounts_add_hint">Use the supported TV sign-in flow</string>
+</resources>

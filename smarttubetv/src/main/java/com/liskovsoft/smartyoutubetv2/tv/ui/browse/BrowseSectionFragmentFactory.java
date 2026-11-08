@@ -71,7 +71,7 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
                 fragment = new ShortsGridFragment();
                 break;
             case BrowseSection.TYPE_SETTINGS_GRID:
-                fragment = new SettingsGridFragment();
+                fragment = createSettingsFragment();
                 break;
             case BrowseSection.TYPE_MULTI_GRID:
                 fragment = new MultiVideoGridFragment();
@@ -101,6 +101,10 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
 
     protected Fragment createGridFragment() {
         return new VideoGridFragment();
+    }
+
+    protected Fragment createSettingsFragment() {
+        return new SettingsGridFragment();
     }
 
     public void updateCurrentFragment(SettingsGroup group) {

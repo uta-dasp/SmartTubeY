@@ -45,7 +45,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
 import com.liskovsoft.smartyoutubetv2.common.misc.CrashRestorer;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -128,6 +127,11 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
                 if (showingLibrary && selectedSection == MediaGroup.TYPE_HISTORY) return new PersonalLibraryFragment();
                 if (selectedSection == MediaGroup.TYPE_SUBSCRIPTIONS) return new PersonalSubscriptionsFragment();
                 return new PersonalVideoGridFragment();
+            }
+
+            @Override
+            protected Fragment createSettingsFragment() {
+                return new PersonalSettingsFragment();
             }
         };
     }
@@ -251,7 +255,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         accountLabelParams.leftMargin = dp(9);
         account.addView(accountName, accountLabelParams);
         navigationLabels.add(accountName);
-        account.setOnClickListener(view -> AccountSelectionPresenter.instance(requireContext()).show(true));
+        account.setOnClickListener(view -> PersonalAccountChooserFragment.show(this));
         FrameLayout.LayoutParams accountParams = new FrameLayout.LayoutParams(-1, dp(36));
         accountParams.leftMargin = dp(25.5f);
         accountParams.rightMargin = dp(16.5f);
@@ -590,11 +594,20 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         if (avatar == null) return;
         Account account = MediaServiceManager.instance().getSelectedAccount();
         accountName.setText(account != null ? account.getName() : getString(R.string.personal_guest));
+        Glide.with(this).clear(avatar);
         if (account != null && account.getAvatarImageUrl() != null) {
             Glide.with(this).load(account.getAvatarImageUrl()).circleCrop().into(avatar);
         } else {
             avatar.setImageResource(android.R.drawable.ic_menu_myplaces);
         }
+    }
+
+    void onPersonalAccountChooserClosed() {
+        updateBadge();
+        if (factory.getCurrentFragment() instanceof PersonalSettingsFragment) {
+            ((PersonalSettingsFragment) factory.getCurrentFragment()).refreshDetails();
+        }
+        if (accountButton != null) accountButton.requestFocus();
     }
 
     private void focusNavigation() {
@@ -605,6 +618,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     }
 
     private void setExpanded(boolean value) {
+        if (selectedSection == MediaGroup.TYPE_SETTINGS) value = true;
         if (expanded == value || rail == null) return;
         expanded = value;
         applyRailWidth();
@@ -638,7 +652,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
                 consumedBack = false;
                 return true;
             }
-            if (event.getAction() == KeyEvent.ACTION_DOWN && !expanded) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && (!expanded ||
+                    (selectedSection == MediaGroup.TYPE_SETTINGS && root != null && isInside(root.findFocus(), content)))) {
                 focusNavigation();
                 consumedBack = true;
                 return true;
