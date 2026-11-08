@@ -1,12 +1,17 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.personal;
 
 import android.os.Bundle;
+import android.graphics.Typeface;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.leanback.widget.BaseGridView;
 import androidx.leanback.widget.FocusHighlight;
 import androidx.leanback.widget.ListRowPresenter;
+import androidx.leanback.widget.Presenter;
+import androidx.leanback.widget.RowHeaderPresenter;
 
 import com.liskovsoft.smartyoutubetv2.tv.presenter.VideoCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.VideoRowsFragment;
@@ -23,6 +28,25 @@ public class PersonalVideoRowsFragment extends VideoRowsFragment {
         presenter.setSelectEffectEnabled(false);
         presenter.setShadowEnabled(false);
         presenter.enableChildRoundedCorners(true);
+        presenter.setHeaderPresenter(new RowHeaderPresenter() {
+            @Override
+            public Presenter.ViewHolder onCreateViewHolder(ViewGroup parent) {
+                Presenter.ViewHolder holder = super.onCreateViewHolder(parent);
+                if (holder.view instanceof TextView) {
+                    TextView label = (TextView) holder.view;
+                    label.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                    label.setTextSize(15);
+                    label.setTextColor(0xFFAAAAAA);
+                    label.setIncludeFontPadding(false);
+                }
+                return holder;
+            }
+
+            @Override
+            protected void onSelectLevelChanged(RowHeaderPresenter.ViewHolder holder) {
+                holder.view.setAlpha(1);
+            }
+        });
         return presenter;
     }
 
@@ -32,9 +56,8 @@ public class PersonalVideoRowsFragment extends VideoRowsFragment {
         if (getVerticalGridView() != null) {
             getVerticalGridView().setPadding(0, 0, 0, 0);
             getVerticalGridView().setClipToPadding(false);
-            getVerticalGridView().setWindowAlignment(BaseGridView.WINDOW_ALIGN_LOW_EDGE);
-            getVerticalGridView().setWindowAlignmentOffset(0);
-            getVerticalGridView().setWindowAlignmentOffsetPercent(BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
+            getVerticalGridView().setWindowAlignment(BaseGridView.WINDOW_ALIGN_NO_EDGE);
+            setAlignment(PersonalVideoCardPresenter.dp(requireContext(), 33.5f));
         }
     }
 }
