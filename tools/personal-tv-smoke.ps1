@@ -292,7 +292,13 @@ function Focus-RailTarget {
     if ($from -lt 0 -or $to -lt 0) { throw ('Required visible rail control is unavailable: ' + $Description) }
     $direction = if ($to -ge $from) { 'KEYCODE_DPAD_DOWN' } else { 'KEYCODE_DPAD_UP' }
     $keys = @(); for ($i = 0; $i -lt [Math]::Abs($to - $from); $i++) { $keys += $direction }
-    Step -Id ('rail-' + $Description.ToLowerInvariant()) -Keys $keys -Expected ($Description + ' rail focus') -Predicate ({ param($s) Focus-Is $s $Description }.GetNewClosure())
+    # GetNewClosure creates a module that cannot resolve this script's local helper functions.
+    # Capture only the target value and inspect the supplied focus nodes directly.
+    Step -Id ('rail-' + $Description.ToLowerInvariant()) -Keys $keys -Expected ($Description + ' rail focus') -Predicate ({ param($s)
+        return @($s.Focus | Where-Object {
+            $_.GetAttribute('text') -eq $Description -or $_.GetAttribute('content-desc') -eq $Description
+        }).Count -gt 0
+    }.GetNewClosure())
 }
 
 try {
