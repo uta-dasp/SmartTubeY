@@ -10,6 +10,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.text.TextUtils;
@@ -117,8 +118,8 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
         search.setHint(R.string.personal_search);search.setTextSize(18);search.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
         search.setTextColor(focusText());search.setHintTextColor(focusText());search.setIncludeFontPadding(false);
         search.setGravity(Gravity.CENTER_VERTICAL);search.setPadding(dp(16),0,dp(16),0);search.setBackground(background(18));
-        search.setSelectAllOnFocus(true);search.setImeOptions(EditorInfo.IME_ACTION_SEARCH);search.setShowSoftInputOnFocus(false);
-        search.setOnClickListener(view->{search.setShowSoftInputOnFocus(true);InputMethodManager manager=(InputMethodManager)requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);if(manager!=null)manager.showSoftInput(search,InputMethodManager.SHOW_IMPLICIT);});
+        search.setSelectAllOnFocus(true);search.setImeOptions(EditorInfo.IME_ACTION_SEARCH);if(Build.VERSION.SDK_INT>=21)search.setShowSoftInputOnFocus(false);
+        search.setOnClickListener(view->{if(Build.VERSION.SDK_INT>=21)search.setShowSoftInputOnFocus(true);InputMethodManager manager=(InputMethodManager)requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);if(manager!=null)manager.showSoftInput(search,InputMethodManager.SHOW_IMPLICIT);});
         search.setOnEditorActionListener((view,action,event)->{
             if(action==EditorInfo.IME_ACTION_SEARCH||(event!=null&&event.getAction()==KeyEvent.ACTION_DOWN&&event.getKeyCode()==KeyEvent.KEYCODE_ENTER)){submitSearch();return true;}return false;
         });
@@ -302,7 +303,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
         MediaServiceManager.instance().removeAccountListener(this);if(banner!=null)Glide.with(banner).clear(banner);
         wrapper=null;banner=null;search=null;microphone=null;empty=null;heroHolder=null;requestedChannel=null;super.onDestroyView();
     }
-    private void hideKeyboard(){if(search!=null){InputMethodManager manager=(InputMethodManager)requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);if(manager!=null)manager.hideSoftInputFromWindow(search.getWindowToken(),0);search.setShowSoftInputOnFocus(false);}}
+    private void hideKeyboard(){if(search!=null){InputMethodManager manager=(InputMethodManager)requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);if(manager!=null)manager.hideSoftInputFromWindow(search.getWindowToken(),0);if(Build.VERSION.SDK_INT>=21)search.setShowSoftInputOnFocus(false);}}
     private boolean current(int token){return token==generation&&wrapper!=null&&isAdded()&&requestedChannel!=null&&requestedChannel.equals(presenter().getChannelId());}
     private String channelId(){return details!=null&&details.channelId!=null?details.channelId:requestedChannel;}
     private ChannelPresenter presenter(){return ChannelPresenter.instance(requireContext());}
