@@ -1,0 +1,15 @@
+import org.gradle.api.tasks.testing.Test
+
+// Keep the application build on JDK17 while the pinned Robolectric 4.6.1
+// instrumentation runs on its compatible Java11 runtime.
+gradle.projectsEvaluated {
+    def testJavaHome = System.getenv('SMARTTUBEY_TEST_JAVA_HOME')
+    if (!testJavaHome) {
+        throw new GradleException('Set SMARTTUBEY_TEST_JAVA_HOME to the verified local JDK11.')
+    }
+    def javaName = System.getProperty('os.name').startsWith('Windows') ? 'java.exe' : 'java'
+    rootProject.project(':smarttubetv').tasks.withType(Test).configureEach {
+        executable = new File(testJavaHome, "bin/${javaName}").absolutePath
+        systemProperty 'maven.repo.local', new File(rootProject.projectDir.parentFile, 'toolchain/maven-local').absolutePath
+    }
+}

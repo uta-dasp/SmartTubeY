@@ -1,3 +1,15 @@
+# SmartTubeY personal flavor
+
+SmartTubeY is a personal Android TV fork that uses SmartTube's service and
+playback modules while developing a measured YouTube-style TV presentation.
+Visual and interaction parity is still in progress. The upstream `stbeta`,
+`ststable`, and `stfdroid` flavors remain available in the source project.
+
+See [Windows build and release instructions](docs/personal-build.md) and the
+[tracked license and notice inventory](docs/personal-third-party-notices.md).
+
+## Upstream SmartTube documentation
+
 [<img src="images/badge_fdroid.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/app.smarttube.fdroid/)
 [<img src="images/badge_github.png" alt="Get it on GitHub" height="80">](https://github.com/yuliskov/SmartTube/releases)
 
