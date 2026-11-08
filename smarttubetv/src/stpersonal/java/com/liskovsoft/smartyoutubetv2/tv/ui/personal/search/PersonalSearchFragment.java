@@ -194,7 +194,10 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
 
     @Override public void onResume() {
         super.onResume();
-        if(!firstResume) { presenter.onViewResumed(); restoreResultFocus(pausedVideo); }
+        if(!firstResume) {
+            presenter.onViewResumed();
+            if(!refreshAccountState(false))restoreResultFocus(pausedVideo);
+        }
         firstResume=false;
     }
 
@@ -312,15 +315,21 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
     }
 
     @Override public void onPersonalAccountChooserClosed() {
-        if(root==null)return;
+        refreshAccountState(true);
+    }
+
+    private boolean refreshAccountState(boolean focusAvatar) {
+        if(root==null)return false;
         String previous=accountIdentity;
         refreshAccountBadge();
-        if(!TextUtils.equals(previous,accountIdentity)) {
-            if(!AccountsData.instance(requireContext()).isPasswordAccepted()){finishReally();return;}
+        boolean changed=!TextUtils.equals(previous,accountIdentity);
+        if(changed) {
+            if(!AccountsData.instance(requireContext()).isPasswordAccepted()){finishReally();return true;}
             String query=getSearchText();
             clearSearch();startSearch(query);
         }
-        if(accountAvatar!=null)accountAvatar.requestFocus();
+        if(focusAvatar&&accountAvatar!=null)accountAvatar.requestFocus();
+        return changed;
     }
 
     private void buildKeyboard() {

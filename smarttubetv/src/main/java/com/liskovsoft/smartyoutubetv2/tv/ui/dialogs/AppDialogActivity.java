@@ -156,9 +156,14 @@ public class AppDialogActivity extends MotherActivity {
     }
 
     void updatePersonalPlayerDialog() {
-        boolean comments = mFragment != null && mFragment.isPersonalCommentsPresentation();
+        // A posted resume/commit refresh may run after pause or fragment detachment.
+        if (!mPersonalDialogResumed || mFragment == null) {
+            endPersonalPlayerDialog();
+            return;
+        }
+        boolean comments = mFragment.isPersonalCommentsPresentation();
         if (comments) mPersonalReturnFromComments = true;
-        if (!mPersonalDialogResumed || mFragment == null || comments
+        if (comments
                 || mFragment.isPersonalOverlayPresentation() || mFragment.isPersonalTransparentPresentation()) {
             endPersonalPlayerDialog();
         } else {
