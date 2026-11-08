@@ -49,6 +49,8 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.browse.interfaces.VideoSection;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -252,7 +254,10 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
 
     private void removeChannelChoice(Video removed){
         String key=channelKey(removed);
-        recentChannels.removeIf(video->video==removed||channelKey(video).equals(key));
+        for(Iterator<Video> iterator=recentChannels.iterator();iterator.hasNext();){
+            Video video=iterator.next();
+            if(video==removed||channelKey(video).equals(key))iterator.remove();
+        }
         alphabeticalChannels.remove(key);
         if(selectedChannel!=null&&channelKey(selectedChannel).equals(key)){
             chooseChannel((PersonalSubscriptionChannelPresenter.Entry)channelChoices.get(0),false);
@@ -322,7 +327,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
             if(!alphabeticalChannels.isEmpty()){
                 channelChoices.add(getString(R.string.personal_subscriptions_alphabetic));
                 List<Video> sorted=new ArrayList<>(alphabeticalChannels.values());Collator collator=Collator.getInstance();
-                sorted.sort((left,right)->collator.compare(String.valueOf(left.getTitle()),String.valueOf(right.getTitle())));
+                Collections.sort(sorted,(left,right)->collator.compare(String.valueOf(left.getTitle()),String.valueOf(right.getTitle())));
                 for(Video video:sorted)channelChoices.add(choice(video));
             }
             rebuildingChannels=false;
