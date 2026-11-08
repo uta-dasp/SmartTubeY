@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="personal_search_results" type="id" />
+    <item name="personal_search_input" type="id" />
+    <item name="personal_search_microphone" type="id" />
+    <item name="personal_search_suggestions" type="id" />
+    <item name="personal_search_keyboard" type="id" />
+    <item name="personal_search_status" type="id" />
+</resources>

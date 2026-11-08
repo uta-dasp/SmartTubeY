@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.search.tags;
 import android.os.Bundle;
 import android.speech.SpeechRecognizer;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -33,7 +34,7 @@ import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SearchTagsFragment extends SearchTagsFragmentBase {
+public class SearchTagsFragment extends SearchTagsFragmentBase implements SearchScreen {
     private static final String TAG = SearchTagsFragment.class.getSimpleName();
     private SearchPresenter mSearchPresenter;
     private Map<Integer, VideoGroupObjectAdapter> mSearchGroupAdapters;
@@ -427,6 +428,15 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
 
     public void onFinish() {
         mSearchPresenter.onFinish();
+    }
+
+    @Override
+    public boolean onSearchKeyDown(int keyCode, KeyEvent event) {
+        // Preserve the legacy empty-results shortcut without intercepting a custom keyboard.
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && !hasResults()) {
+            focusOnSearchField();
+        }
+        return false;
     }
 
     @Override

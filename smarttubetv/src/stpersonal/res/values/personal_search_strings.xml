@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_search_hint">Search</string>
+    <string name="personal_search_voice">Voice search</string>
+    <string name="personal_search_listening">Listening…</string>
+    <string name="personal_search_voice_unavailable">Voice search is unavailable. Use the keyboard to search.</string>
+    <string name="personal_search_voice_permission">Allow microphone access to use voice search.</string>
+    <string name="personal_search_space">SPACE</string>
+    <string name="personal_search_clear">CLEAR</string>
+    <string name="personal_search_submit">SEARCH</string>
+    <string name="personal_search_delete">Backspace</string>
+    <string name="personal_search_language">System keyboard and language</string>
+    <string name="personal_search_suggestions">Search suggestions</string>
+    <string name="personal_search_recommended">From recommended searches</string>
+    <string name="personal_search_results">Search results for %1$s</string>
+    <string name="personal_search_empty_retry">No results to display. Select to retry.</string>
+    <string name="personal_search_home">Home</string>
+    <string name="personal_search_library">Library</string>
+    <string name="personal_search_live">Live</string>
+    <string name="personal_search_movies">Movies &amp; TV</string>
+    <string name="personal_search_settings">Search settings</string>
+    <string name="personal_search_account">Choose account</string>
+</resources>
