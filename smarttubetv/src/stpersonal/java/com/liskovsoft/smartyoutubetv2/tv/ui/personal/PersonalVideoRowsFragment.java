@@ -10,11 +10,13 @@ import androidx.annotation.Nullable;
 import androidx.leanback.widget.BaseGridView;
 import androidx.leanback.widget.FocusHighlight;
 import androidx.leanback.widget.ListRowPresenter;
+import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.RowHeaderPresenter;
 import androidx.leanback.widget.RowPresenter;
 
 import com.liskovsoft.smartyoutubetv2.tv.presenter.VideoCardPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.VideoRowsFragment;
 
@@ -53,9 +55,21 @@ public class PersonalVideoRowsFragment extends VideoRowsFragment {
                     label.setTextSize(15);
                     label.setTextColor(0xFFAAAAAA);
                     label.setIncludeFontPadding(false);
-                    label.setTranslationY(PersonalVideoCardPresenter.dp(parent.getContext(), 6.5f));
                 }
                 return holder;
+            }
+
+            @Override
+            public void onBindViewHolder(Presenter.ViewHolder holder, Object item) {
+                super.onBindViewHolder(holder, item);
+                TextView label = holder.view.findViewById(R.id.row_header);
+                boolean first = false;
+                if (item instanceof ListRow && ((ListRow) item).getAdapter().size() > 0) {
+                    Object video = ((ListRow) item).getAdapter().get(0);
+                    first = video instanceof Video && ((Video) video).getGroup() != null &&
+                            ((Video) video).getGroup().getPosition() == 0;
+                }
+                if (label != null) label.setTranslationY(PersonalVideoCardPresenter.dp(label.getContext(), first ? 6.5f : 0));
             }
 
             @Override
