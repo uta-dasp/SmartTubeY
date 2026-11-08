@@ -47,6 +47,10 @@ build/
 log.txt
 android.keystore
 android-upd2.keystore
+keystore.properties
+*.jks
+*.keystore
+/private-signing/
 build.log
 notes.txt
 out.txt
