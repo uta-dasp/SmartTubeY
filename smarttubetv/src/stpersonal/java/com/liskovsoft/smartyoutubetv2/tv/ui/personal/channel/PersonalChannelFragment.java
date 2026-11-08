@@ -279,7 +279,7 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
     }
 
     @Override protected VideoCardPresenter createVideoCardPresenter(){return new PersonalVideoCardPresenter(){
-        @Override protected Pair<Integer,Integer> getCardDimensPx(Context context){return new Pair<>(dp(context,264),dp(context,148.5f));}
+        @Override protected Pair<Integer,Integer> getCardDimensPx(Context context){return new Pair<>(PersonalChannelFragment.dp(context,264),PersonalChannelFragment.dp(context,148.5f));}
         @Override protected boolean isLargeCard(Video video){return false;}
     };}
     @Override protected ListRowPresenter createListRowPresenter(){return new ChannelRowsPresenter();}
@@ -309,7 +309,8 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
     private MediaItemService itemService(){return YouTubeServiceManager.instance().getMediaItemService();}
     private static void dispose(Disposable request){if(request!=null)request.dispose();}
     private static boolean active(Disposable request){return request!=null&&!request.isDisposed();}
-    private int dp(float value){return PersonalVideoCardPresenter.dp(requireContext(),value);}
+    private int dp(float value){return dp(requireContext(),value);}
+    private static int dp(Context context,float value){return Math.round(value*context.getResources().getDisplayMetrics().density);}
     private static String formatCount(String value){
         try{long number=Long.parseLong(value);if(number>=1000000)return String.format(java.util.Locale.getDefault(),"%.1fM",number/1000000d);if(number>=1000)return String.format(java.util.Locale.getDefault(),"%.1fK",number/1000d);return NumberFormat.getIntegerInstance().format(number);}catch(NumberFormatException error){return value;}
     }
@@ -355,10 +356,10 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
         @Override protected RowPresenter.ViewHolder createRowViewHolder(ViewGroup parent){RowPresenter.ViewHolder holder=super.createRowViewHolder(parent);align(holder);return holder;}
         @Override protected void onRowViewExpanded(RowPresenter.ViewHolder holder,boolean expanded){super.onRowViewExpanded(holder,expanded);align(holder);}
         @Override protected void onRowViewSelected(RowPresenter.ViewHolder holder,boolean selected){super.onRowViewSelected(holder,selected);align(holder);}
-        private void align(RowPresenter.ViewHolder holder){ListRowPresenter.ViewHolder row=(ListRowPresenter.ViewHolder)holder;row.getGridView().setPadding(PersonalVideoCardPresenter.dp(holder.view.getContext(),48),0,PersonalVideoCardPresenter.dp(holder.view.getContext(),48),PersonalVideoCardPresenter.dp(holder.view.getContext(),24));row.getGridView().setHorizontalSpacing(PersonalVideoCardPresenter.dp(holder.view.getContext(),18));row.getGridView().setClipToPadding(false);}
+        private void align(RowPresenter.ViewHolder holder){ListRowPresenter.ViewHolder row=(ListRowPresenter.ViewHolder)holder;row.getGridView().setPadding(dp(holder.view.getContext(),48),0,dp(holder.view.getContext(),48),dp(holder.view.getContext(),24));row.getGridView().setHorizontalSpacing(dp(holder.view.getContext(),18));row.getGridView().setClipToPadding(false);}
     }
     private static final class ChannelHeader extends RowHeaderPresenter {
-        @Override public Presenter.ViewHolder onCreateViewHolder(ViewGroup parent){TextView title=new TextView(parent.getContext());title.setTextSize(15);title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));title.setTextColor(0xFFB8B8B8);title.setIncludeFontPadding(false);title.setGravity(Gravity.TOP);title.setPadding(PersonalVideoCardPresenter.dp(parent.getContext(),48),PersonalVideoCardPresenter.dp(parent.getContext(),10),0,0);title.setLayoutParams(new ViewGroup.LayoutParams(-1,PersonalVideoCardPresenter.dp(parent.getContext(),40.5f)));return new RowHeaderPresenter.ViewHolder(title);}
+        @Override public Presenter.ViewHolder onCreateViewHolder(ViewGroup parent){TextView title=new TextView(parent.getContext());title.setTextSize(15);title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));title.setTextColor(0xFFB8B8B8);title.setIncludeFontPadding(false);title.setGravity(Gravity.TOP);title.setPadding(dp(parent.getContext(),48),dp(parent.getContext(),10),0,0);title.setLayoutParams(new ViewGroup.LayoutParams(-1,dp(parent.getContext(),40.5f)));return new RowHeaderPresenter.ViewHolder(title);}
         @Override public void onBindViewHolder(Presenter.ViewHolder holder,Object item){HeaderItem header=((Row)item).getHeaderItem();((TextView)holder.view).setText(header==null?"":header.getName());}
         @Override protected void onSelectLevelChanged(RowHeaderPresenter.ViewHolder holder){ }
     }
