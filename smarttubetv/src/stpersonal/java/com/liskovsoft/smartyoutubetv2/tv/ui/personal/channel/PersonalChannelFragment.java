@@ -385,7 +385,11 @@ public class PersonalChannelFragment extends ChannelFragment implements MediaSer
             Drawable liveIcon=DrawableCompat.wrap(ContextCompat.getDrawable(requireContext(),R.drawable.personal_channel_live)).mutate();DrawableCompat.setTintList(liveIcon,focusText());
             holder.watchLive.setCompoundDrawablesWithIntrinsicBounds(liveIcon,null,null,null);holder.watchLive.setCompoundDrawablePadding(dp(6));holder.watchLive.setPadding(dp(12),0,dp(12),0);
             addAction(actions,holder.watchLive);holder.watchLive.getLayoutParams().width=dp(109);
-            holder.subscription=button(getString(R.string.action_subscribe),12);holder.subscription.setOnClickListener(v->toggleSubscription());addAction(actions,holder.subscription);holder.subscription.getLayoutParams().width=dp(90);
+            holder.subscription=button(getString(R.string.action_subscribe),12);
+            // Preserve the reference minimum while allowing longer states/localized labels
+            // to measure at their full text width plus the existing pill insets.
+            holder.subscription.setSingleLine(true);holder.subscription.setEllipsize(null);holder.subscription.setMinWidth(dp(90));
+            holder.subscription.setOnClickListener(v->toggleSubscription());addAction(actions,holder.subscription);
             channelOptionsOnHold(holder.watchLive);channelOptionsOnHold(holder.subscription);
             view.primary=holder.watchLive;view.secondary=holder.subscription;
             return holder;
