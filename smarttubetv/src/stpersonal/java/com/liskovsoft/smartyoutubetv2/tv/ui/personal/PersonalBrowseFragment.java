@@ -108,7 +108,14 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private Video pausedVideo;
     private final ViewTreeObserver.OnGlobalFocusChangeListener focusListener = (oldFocus, newFocus) -> {
         if (newFocus != null && root != null) {
-            if (isInside(newFocus, rail)) setExpanded(true);
+            if (isInside(newFocus, rail)) {
+                setExpanded(true);
+                if (railScroll != null && navigation != null) {
+                    int index = navigation.indexOfChild(newFocus);
+                    int libraryIndex = navigation.indexOfChild(navigationItems.get(NAV_LIBRARY));
+                    if (newFocus == accountButton || (index >= 0 && index <= libraryIndex)) railScroll.scrollTo(0, 0);
+                }
+            }
             else if (isInside(newFocus, translatedContent)) setExpanded(false);
         }
     };
