@@ -47,7 +47,9 @@ android {
     productFlavors {
         stbeta {}
         ststable {}
-        stpersonal {}
+        stpersonal {
+            matchingFallbacks = ['stbeta']
+        }
         stfdroid {}
     }
 }

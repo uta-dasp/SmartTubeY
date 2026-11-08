@@ -170,6 +170,7 @@ android {
         stpersonal {
             applicationId "org.smarttubey.personal"
             targetSdkVersion project.properties.compileSdkVersion
+            matchingFallbacks = ['stbeta']
         }
         stfdroid {
             applicationId "app.smarttube.fdroid"
