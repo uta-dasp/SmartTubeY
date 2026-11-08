@@ -157,12 +157,23 @@ Earlier debug validation also observed fullscreen restoration after a codec
 change. The separate 31-assertion navigation smoke passed, but does not exercise
 player actions or track changes.
 
+The interim signed `c5434f7` release also passed assemble (4m37s), release lint
+(0 errors, 305 retained warnings, no new issues), signature/alignment checks and
+an in-place TV update retaining the account. On a regular captioned video,
+comments opened, replies opened, and Back returned through comments to Advanced
+with the normal preview restored, then to fullscreen. The real seek storyboard,
+chapter label and green SponsorBlock timeline segment rendered. Back dismissed
+the seek UI; position cancellation and actual segment skipping were not proven.
+On `f8a15d7`, reopening Settings confirmed the selected stream as 720/30/VP9;
+the stale parent summary exposed by child Back is addressed by the subsequent
+dynamic-description change and still requires final-APK validation.
+
 Remaining on-TV checks, including the final signed release:
 
-- Play/pause/previous/next, media keys, seek confirmation/cancel, storyboard thumbnails and SponsorBlock timeline segments.
+- Remaining transport/media-key states, controlled seek confirmation/cancel, and actual SponsorBlock skipping.
 - Every row in the placement matrix, with state changes, bound like/dislike state, original long presses and explicit Advanced options.
 - Settings → Quality/Audio/Captions/Speed/Repeat → Back → Settings → Back; focus returns to the invoking control.
-- Settings → Advanced → Chat/comments → replies → Back → comments → Back → Advanced; verify the live preview returns at its normal size and fullscreen restores after closing.
+- Other comments/reply contexts, live chat and Shorts comments; the regular-video nested Back path passed on the interim release.
 - Close via Back, Home, background/resume, timeout and activity recreation; verify fullscreen/subtitle restoration, no stale clipping and no changed engine state.
 - Browse settings while a background/PiP player exists; notification/comment/opaque/don't-resize paths must not acquire a personal preview lease.
 - Live video, chat, subtitles, vertical/cinema video, zoom/rotation and texture/surface modes; measure actual SurfaceView clipping on the TV.

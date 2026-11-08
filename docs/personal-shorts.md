@@ -50,9 +50,15 @@ previous video, Back revealing the rail while retaining playback, and a second
 Back returning to the stopped entry without an automatic reopen. The separate
 31-assertion navigation smoke passed; it does not exercise Shorts playback.
 
+The interim signed `c5434f7` release also decoded Shorts on the TV. More opened
+the existing controls, their Settings panel opened over the same player, and
+Back restored native portrait focus at x583..1209/y0..1080. Two-stage Back
+returned to the browse entry; returning to Home placed its expanded rail focus
+at x33..477/y234..312, without the earlier lower-section scroll offset.
+
 Final signed-release QA remains pending. Remaining manual checks include
 SurfaceView rounded clipping, feed continuation beyond loaded items, account
-changes, queue-to-regular transition, PIP, background/resume and More/active
+changes, queue-to-regular transition, PIP, background/resume and remaining active
 seek/dialog/comments focus and restoration. No additional player or media decoder
 is instantiated. Basic next/previous observations do not establish continuation
 or every controller path.
