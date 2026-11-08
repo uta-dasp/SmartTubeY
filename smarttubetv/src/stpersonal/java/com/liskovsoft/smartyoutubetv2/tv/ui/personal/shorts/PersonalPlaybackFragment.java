@@ -39,6 +39,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalAccountChooserFragment;
 import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalBrowseFragment;
+import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalNavigationIcons;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackFragment;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -205,7 +206,8 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
     private TextView navigationRow(String label,int icon,Runnable click){
         TextView item=button(label,15);item.setBackground(buttonBackground(9));item.setGravity(Gravity.CENTER_VERTICAL);item.setPadding(dp(10.5f),0,dp(12),0);
         item.setSingleLine(true);item.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        Drawable drawable=androidx.core.content.ContextCompat.getDrawable(requireContext(),icon);
+        Drawable drawable=PersonalNavigationIcons.create(requireContext(),icon);
+        if(drawable==null)drawable=androidx.core.content.ContextCompat.getDrawable(requireContext(),icon);
         if(drawable!=null){drawable=androidx.core.graphics.drawable.DrawableCompat.wrap(drawable).mutate();androidx.core.graphics.drawable.DrawableCompat.setTintList(drawable,focusText());drawable.setBounds(0,0,dp(24),dp(24));item.setCompoundDrawables(drawable,null,null,null);item.setCompoundDrawablePadding(dp(10.5f));}
         item.setOnClickListener(view->click.run());
         return item;

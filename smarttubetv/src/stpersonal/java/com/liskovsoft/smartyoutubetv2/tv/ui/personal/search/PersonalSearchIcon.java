@@ -1,28 +1,55 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.personal.search;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.View;
+import androidx.core.graphics.drawable.DrawableCompat;
+import com.liskovsoft.smartyoutubetv2.tv.ui.personal.PersonalNavigationIcons;
 
 /** Small code-native TV symbols drawn in a consistent 24-unit coordinate space. */
 final class PersonalSearchIcon extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final String symbol;
+    private final Drawable navigation;
     private int color = 0xFFAAAAAA;
 
     PersonalSearchIcon(Context context, String symbol) {
+        this(context, symbol, false);
+    }
+
+    PersonalSearchIcon(Context context, String symbol, boolean navigationStyle) {
         super(context);
         this.symbol = symbol;
+        Drawable drawable = navigationStyle ? PersonalNavigationIcons.create(context, symbol) : null;
+        navigation = drawable == null ? null : DrawableCompat.wrap(drawable).mutate();
+        if (navigation != null) DrawableCompat.setTintList(navigation, ColorStateList.valueOf(color));
+        setDuplicateParentStateEnabled(true);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 
-    void setColor(int color) { this.color = color; invalidate(); }
+    void setColor(int color) {
+        this.color = color;
+        if (navigation != null) DrawableCompat.setTintList(navigation, ColorStateList.valueOf(color));
+        invalidate();
+    }
+
+    @Override protected void drawableStateChanged() {
+        super.drawableStateChanged();
+        if (navigation != null) { navigation.setState(getDrawableState()); invalidate(); }
+    }
 
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (navigation != null) {
+            navigation.setBounds(0, 0, getWidth(), getHeight());
+            navigation.draw(canvas);
+            return;
+        }
         canvas.save();
         float size = Math.min(getWidth(), getHeight());
         canvas.translate((getWidth() - size) / 2, (getHeight() - size) / 2);

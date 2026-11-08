@@ -462,7 +462,9 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         button.setBackground(buttonBackground(9));
         button.setPadding(dp(10.5f), 0, dp(12), 0);
         ImageView image = new ImageView(requireContext());
-        if (icon > 0) image.setImageResource(icon);
+        Drawable nativeIcon = PersonalNavigationIcons.create(requireContext(), icon);
+        if (nativeIcon != null) image.setImageDrawable(nativeIcon);
+        else if (icon > 0) image.setImageResource(icon);
         tintImage(image);
         image.setDuplicateParentStateEnabled(true);
         button.addView(image, new LinearLayout.LayoutParams(dp(24), dp(24)));

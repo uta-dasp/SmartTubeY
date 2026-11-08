@@ -289,7 +289,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
                 R.string.personal_search_library,R.string.header_music,R.string.personal_search_live,R.string.header_gaming,R.string.personal_search_movies};
         for(int i=0;i<icons.length;i++) {
             final int destination=destinations[i];
-            FrameLayout button=iconButton(icons[i],getString(titles[i]),18,() -> {
+            FrameLayout button=iconButton(icons[i],getString(titles[i]),"movies".equals(icons[i])?18:24,() -> {
                 if(destination<0) focusOnSearchField();
                 else BrowsePresenter.instance(requireContext()).selectSection(destination);
             });
@@ -300,7 +300,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
             }
             place(root,button,21,99+i*39,36,36);
         }
-        FrameLayout settings=iconButton("settings",getString(R.string.personal_search_settings),18,() -> presenter.onSearchSettingsClicked());
+        FrameLayout settings=iconButton("settings",getString(R.string.personal_search_settings),24,() -> presenter.onSearchSettingsClicked());
         place(root,settings,21,474,36,36);
     }
 
@@ -684,7 +684,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
     private FrameLayout iconButton(String symbol,String description,float iconSize,Runnable click) {
         FrameLayout view=new FrameLayout(requireContext());view.setId(View.generateViewId());view.setFocusable(true);
         view.setContentDescription(description);view.setBackground(focusBackground(18,0x00000000));
-        PersonalSearchIcon icon=new PersonalSearchIcon(requireContext(),symbol);
+        PersonalSearchIcon icon=new PersonalSearchIcon(requireContext(),symbol,true);
         FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(dp(iconSize),dp(iconSize),Gravity.CENTER);view.addView(icon,params);
         view.setOnClickListener(v->click.run());view.setOnFocusChangeListener((v,focused)->icon.setColor(focused?BACKGROUND:MUTED));return view;
     }
