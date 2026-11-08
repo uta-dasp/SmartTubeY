@@ -169,7 +169,9 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
             category.setOnKeyListener((view, keyCode, event) -> {
                 if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                        if (inlineModel != null) focusOption(); else openSelected();
+                        if (inlineModel != null) focusOption();
+                        else if (supportsInline(item)) openSelected();
+                        else openButton.requestFocus();
                     }
                     return true;
                 }
