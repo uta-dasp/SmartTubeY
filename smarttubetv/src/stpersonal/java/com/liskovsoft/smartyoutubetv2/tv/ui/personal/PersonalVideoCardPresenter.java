@@ -117,7 +117,7 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
         @Override public void draw(Canvas canvas) {
             // BaseCardView deliberately removes focused/selected from drawableState.
             // Read the actual card state rather than relying on a StateListDrawable.
-            if (!card.hasFocus() && !card.isSelected()) return;
+            if (!card.hasFocus()) return;
             rectangle.set(image.getLeft() - inset, image.getTop() - inset,
                     image.getRight() + inset, image.getBottom() + inset);
             canvas.drawRoundRect(rectangle, radius, radius, paint);
@@ -132,6 +132,8 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
     public void onBindViewHolder(Presenter.ViewHolder holder, Object item) {
         super.onBindViewHolder(holder, item);
         ComplexImageCardView card = (ComplexImageCardView) holder.view;
+        // Recycled bare-grid holders can retain selected=true from a previous feed.
+        if (card.isSelected() != card.hasFocus()) card.setSelected(card.hasFocus());
         Video video = (Video) item;
         TextView subtitle = card.findViewById(R.id.content_text);
         if (subtitle != null) subtitle.setText(formatMetadata(video));
