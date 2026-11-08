@@ -30,10 +30,10 @@ public class PersonalShortsPlaybackTest {
             activity.setContentView(feed);
             assertTrue(feed.requestFocus());
 
-            pressOk(activity);
+            pressOk(feed);
             assertFalse(fragment.playWhenReady);
             assertEquals(Arrays.asList("engine:false", "notify:false"), fragment.calls);
-            pressOk(activity);
+            pressOk(feed);
             assertTrue(fragment.playWhenReady);
             assertEquals(Arrays.asList("engine:false", "notify:false", "engine:true", "notify:true"), fragment.calls);
         } finally {
@@ -50,7 +50,7 @@ public class PersonalShortsPlaybackTest {
             activity.setContentView(feed);
             assertTrue(feed.requestFocus());
 
-            pressOk(activity);
+            pressOk(feed);
             assertTrue(fragment.playWhenReady);
             assertTrue(fragment.calls.isEmpty());
         } finally {
@@ -58,9 +58,12 @@ public class PersonalShortsPlaybackTest {
         }
     }
 
-    private static void pressOk(Activity activity) {
-        assertTrue(activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER)));
-        assertTrue(activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)));
+    private static void pressOk(View feed) {
+        // Exercise the real focused feed's key-to-click path. The plain host Activity's
+        // Robolectric window does not route dispatchKeyEvent into its content hierarchy.
+        assertTrue(feed.hasFocus());
+        assertTrue(feed.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER)));
+        assertTrue(feed.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)));
         Shadows.shadowOf(Looper.getMainLooper()).idle();
     }
 
