@@ -241,6 +241,9 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxandroid:' + rxAndroidVersion
     implementation 'io.reactivex.rxjava2:rxjava:' + rxJavaVersion
 
+    // The personal channel metadata adapter uses the existing pinned OkHttp transport directly.
+    stpersonalImplementation 'com.squareup.okhttp3:okhttp:' + okhttpVersion
+
     // Add the Firebase Crashlytics SDK.
 
     stbetaImplementation('com.google.firebase:firebase-crashlytics:' + firebaseCrashlyticsVersion) {
