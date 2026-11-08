@@ -82,6 +82,10 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         return new CustomListRowPresenter();
     }
 
+    protected boolean useChildRoundedCorners() {
+        return getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS);
+    }
+
     @Override
     public void onViewCreated(android.view.View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -106,7 +110,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
         if (mRowsAdapter == null) {
             mRowPresenter = createListRowPresenter();
-            mRowPresenter.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
+            mRowPresenter.enableChildRoundedCorners(useChildRoundedCorners());
 
             ClassPresenterSelector presenterSelector = new ClassPresenterSelector();
             presenterSelector.addClassPresenter(ListRow.class, mRowPresenter);

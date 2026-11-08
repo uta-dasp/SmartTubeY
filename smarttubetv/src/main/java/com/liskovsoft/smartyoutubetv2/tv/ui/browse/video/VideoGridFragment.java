@@ -79,6 +79,10 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
         return new CustomVerticalGridPresenter();
     }
 
+    protected boolean useChildRoundedCorners() {
+        return getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS);
+    }
+
     private void setupEventListeners() {
         setOnItemViewClickedListener(new ItemViewClickedListener());
         setOnItemViewSelectedListener(new ItemViewSelectedListener());
@@ -101,7 +105,7 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
         presenter.setNumberOfColumns(
                 GridFragmentHelper.getMaxColsNum(getContext(), isShorts() ? R.dimen.shorts_card_width : R.dimen.card_width, mVideoGridScale)
         );
-        presenter.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
+        presenter.enableChildRoundedCorners(useChildRoundedCorners());
         setGridPresenter(presenter);
 
         if (mGridAdapter == null) {

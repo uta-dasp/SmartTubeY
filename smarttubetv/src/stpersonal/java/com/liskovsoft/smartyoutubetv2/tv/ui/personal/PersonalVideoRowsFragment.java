@@ -19,6 +19,9 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.VideoRowsFragment;
 
 public class PersonalVideoRowsFragment extends VideoRowsFragment {
     @Override
+    protected boolean useChildRoundedCorners() { return false; }
+
+    @Override
     protected VideoCardPresenter createVideoCardPresenter() {
         return new PersonalVideoCardPresenter();
     }
