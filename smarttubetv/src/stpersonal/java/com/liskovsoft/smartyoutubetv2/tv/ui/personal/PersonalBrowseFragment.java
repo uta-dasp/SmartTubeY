@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.Fragment;
 import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.PageRow;
@@ -171,7 +173,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         ImageView microphone = new ImageView(context);
         int microphoneResource = getResources().getIdentifier("lb_ic_search_mic", "drawable", context.getPackageName());
         microphone.setImageResource(microphoneResource != 0 ? microphoneResource : R.drawable.action_search);
-        microphone.setImageTintList(textColors());
+        tintImage(microphone);
         microphone.setPadding(dp(9), dp(9), dp(9), dp(9));
         microphone.setBackground(buttonBackground(18, 0xFF272727));
         microphone.setFocusable(true);
@@ -259,7 +261,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         button.setPadding(dp(14), 0, dp(12), 0);
         ImageView image = new ImageView(requireContext());
         if (icon > 0) image.setImageResource(icon);
-        image.setImageTintList(textColors());
+        tintImage(image);
         image.setDuplicateParentStateEnabled(true);
         button.addView(image, new LinearLayout.LayoutParams(dp(17), dp(17)));
         TextView label = text(title, 16);
@@ -542,6 +544,14 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         view.setGravity(Gravity.CENTER_VERTICAL);
         view.setIncludeFontPadding(false);
         return view;
+    }
+
+    private static void tintImage(ImageView image) {
+        Drawable drawable = image.getDrawable();
+        if (drawable == null) return;
+        Drawable tinted = DrawableCompat.wrap(drawable).mutate();
+        DrawableCompat.setTintList(tinted, textColors());
+        image.setImageDrawable(tinted);
     }
 
     private static ColorStateList textColors() {
