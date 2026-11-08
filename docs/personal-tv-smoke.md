@@ -11,7 +11,7 @@ Run from PowerShell 7 with an already connected ADB device and the personal app 
 script launches the app normally. Neither path clears application data or changes settings,
 accounts, permissions, networking, or the device's sleep state.
 
-The fixture expects English controls and a populated Home page with a focused video card.
+The fixture expects English controls and a populated Home page with its first video card focused.
 The launcher uses MAIN/LEANBACK_LAUNCHER. A configured alternative boot page or an existing
 modal screen fails that precondition rather than modifying preferences. Account and password
 gates stop with `needs_input`; the script never types credentials or selects a saved account.
@@ -29,10 +29,13 @@ is recorded as `empty_skipped`, supporting both anonymous and signed-in runs.
 
 Every checkpoint confirms that the resumed package is `org.smarttubey.personal`. Each ADB
 operation and checkpoint has a maximum 20-second wait. All hierarchy polling shares one
-60-second elapsed budget, including initial snapshots and retries; optional checks use that
-same budget. Slower devices or unavailable public data can therefore produce a bounded
-failure rather than a complete run. `StepTimeoutSeconds` and `PollBudgetSeconds` can reduce
-these caps but cannot exceed them. There are no fixed sleeps or unbounded retry loops.
+180-second elapsed budget by default, including initial snapshots and retries; optional checks
+use that same budget. `PollBudgetSeconds` can range from 1 to 300 seconds; individual checkpoints
+and ADB operations retain their 20-second cap. The harness uses uncompressed hierarchy snapshots
+to retain screen-container IDs. It estimates snapshot collection cost from observed timings and
+stops before a retry that cannot fit the remaining window. A missed expected state or exhausted
+collection window is reported as a harness assertion failure, without labeling the app as
+unresponsive. There are no fixed sleeps or unbounded retry loops.
 
 Each run creates a distinct folder with `summary.json` and `private/`. The summary contains
 assertion names, status, timings, and evidence filenames, with no account names, video titles,

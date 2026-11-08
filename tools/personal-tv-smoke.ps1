@@ -19,7 +19,7 @@ param(
     [switch]$ColdStart,
     [switch]$CheckSubscriptions,
     [ValidateRange(1, 20)][int]$StepTimeoutSeconds = 20,
-    [ValidateRange(1, 60)][int]$PollBudgetSeconds = 60
+    [ValidateRange(1, 300)][int]$PollBudgetSeconds = 180
 )
 
 Set-StrictMode -Version Latest
@@ -36,6 +36,7 @@ $script:RemotePng = '/sdcard/sty-smoke-' + $runId + '.png'
 $script:Checks = [Collections.Generic.List[object]]::new()
 $script:CaptureIndex = 0
 $script:PollUsedMs = 0L
+$script:SnapshotEstimateMs = 4000L
 $script:LastState = $null
 $script:RunWatch = [Diagnostics.Stopwatch]::StartNew()
 $script:CurrentPollWatch = $null
@@ -71,8 +72,12 @@ function Invoke-Adb {
         [void]$process.Start()
         $stdoutTask = $process.StandardOutput.ReadToEndAsync()
         $stderrTask = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit((Get-AdbTimeout))) {
+        $operationTimeout = Get-AdbTimeout
+        if (-not $process.WaitForExit($operationTimeout)) {
             $process.Kill()
+            if ($null -ne $script:CurrentPollWatch -and $operationTimeout -lt 20000) {
+                throw 'State polling window expired during hierarchy collection.'
+            }
             throw 'An ADB operation exceeded its bounded timeout.'
         }
         $stdout = $stdoutTask.GetAwaiter().GetResult()
@@ -103,7 +108,8 @@ function Read-State {
     if (-not $resumed.Success) { throw 'Could not identify the resumed activity.' }
     $activePackage = $resumed.Groups[1].Value
     if ($activePackage -ne $script:Package) { throw 'The resumed package is not org.smarttubey.personal.' }
-    $dump = Invoke-Adb @('shell', 'uiautomator', 'dump', '--compressed', $script:RemoteXml)
+    # Compressed dumps omit non-important ancestors used as screen/container selectors.
+    $dump = Invoke-Adb @('shell', 'uiautomator', 'dump', $script:RemoteXml)
     if ($dump -notmatch '(?i)dumped to:') { throw 'UI hierarchy collection failed; refusing a stale snapshot.' }
     $raw = Invoke-Adb @('shell', 'cat', $script:RemoteXml)
     $xml = [xml]::new()
@@ -210,28 +216,51 @@ function Wait-State {
     $attempts = 0
     $passed = $false
     $failure = $null
+    $lastSnapshotMs = 0L
+    $termination = 'matched'
     $script:LastState = $null
     try {
-        do {
+        while ($true) {
+            $remaining = [Math]::Min($StepTimeoutSeconds * 1000L - $script:CurrentStepWatch.ElapsedMilliseconds,
+                    $PollBudgetSeconds * 1000L - $script:PollUsedMs)
+            if ($remaining -lt $script:SnapshotEstimateMs) {
+                $termination = 'expected_state_budget'
+                break
+            }
             $attempts++
             $script:CurrentPollWatch = [Diagnostics.Stopwatch]::StartNew()
+            $collected = $false
             try {
                 $state = Read-State $Id
+                $collected = $true
                 $script:LastState = $state
                 $passed = [bool](& $Predicate $state)
             } finally {
-                $script:PollUsedMs += $script:CurrentPollWatch.ElapsedMilliseconds
+                $lastSnapshotMs = $script:CurrentPollWatch.ElapsedMilliseconds
+                $script:PollUsedMs += $lastSnapshotMs
+                if ($collected) { $script:SnapshotEstimateMs = [Math]::Max(1000L, [long][Math]::Ceiling($lastSnapshotMs * 1.25 + 250)) }
                 $script:CurrentPollWatch = $null
             }
             if ($passed) { break }
             # Each hierarchy request itself waits for UI idle. No fixed sleep or busy polling.
-        } while ($script:CurrentStepWatch.ElapsedMilliseconds -lt $StepTimeoutSeconds * 1000L -and $script:PollUsedMs -lt $PollBudgetSeconds * 1000L)
-        if (-not $passed) { throw ('Expected state was not reached: ' + $Expected) }
-    } catch { $failure = Get-SafeFailure $_.Exception.Message; throw }
+        }
+        if (-not $passed) { throw ('Expected state was not reached: ' + $Expected + '. The last snapshot did not match, or too little polling budget remained for another hierarchy collection.') }
+    } catch {
+        if ($_.Exception.Message.StartsWith('State polling window expired')) {
+            $termination = 'collection_budget'
+            $failure = 'Expected state was not reached: ' + $Expected + '. The harness polling window expired during hierarchy collection.'
+            throw [TimeoutException]::new($failure)
+        }
+        $failure = Get-SafeFailure $_.Exception.Message
+        if ($termination -eq 'matched') { $termination = 'collection_error' }
+        throw
+    }
     finally {
         $script:Checks.Add([pscustomobject]@{
             id = $Id; expected = $Expected; passed = $passed; attempts = $attempts
             elapsedMs = $script:CurrentStepWatch.ElapsedMilliseconds
+            lastSnapshotMs = $lastSnapshotMs; nextSnapshotEstimateMs = $script:SnapshotEstimateMs
+            termination = $termination
             reason = $failure
             evidence = if ($null -ne $script:LastState) { $script:LastState.XmlFile } else { $null }
         })
@@ -280,7 +309,7 @@ try {
     Step 'search-submit-focus' @('KEYCODE_DPAD_DOWN','KEYCODE_DPAD_DOWN','KEYCODE_DPAD_DOWN','KEYCODE_DPAD_DOWN','KEYCODE_DPAD_RIGHT','KEYCODE_DPAD_RIGHT') 'Native SEARCH button focus' { param($s) Focus-Is $s 'SEARCH' }
     Step 'search-nasa-results' @('KEYCODE_DPAD_CENTER') 'Public NASA channel result focused' { param($s) (Has-Resource $s 'personal_search_results') -and (Focus-IsNasaChannel $s) } -Screenshot
     Step 'channel-nasa' @('KEYCODE_DPAD_CENTER') 'NASA page with Watch live focused' { param($s) (Has-Text $s 'NASA') -and (Focus-Is $s 'Watch live') } -Screenshot
-    Step 'channel-live-shelf' @('KEYCODE_DPAD_DOWN') 'Focused real video card on the channel shelf' { param($s) (Has-Text $s 'NASA') -and (Focus-IsVideoCard $s) } -Screenshot
+    Step 'channel-live-shelf' @('KEYCODE_DPAD_DOWN') 'Focused real video card on the channel shelf' { param($s) (Has-Resource $s 'channel_fragment') -and (Focus-IsVideoCard $s) } -Screenshot
     Step 'channel-back-results' @('KEYCODE_BACK') 'Same public NASA channel result restored' { param($s) (Has-Resource $s 'personal_search_results') -and (Focus-IsNasaChannel $s) }
     Step 'search-back-editing' @('KEYCODE_BACK') 'Native search editing with microphone focused' { param($s) (Has-Resource $s 'personal_search_keyboard') -and (Focus-Is $s 'Voice search') }
     Step 'search-back-browse' @('KEYCODE_BACK') 'Browse Search rail restored' { param($s) (Has-Resource $s 'personal_browse_content') -and (Focus-Is $s 'Search') }
