@@ -7,6 +7,9 @@
     <string name="personal_brand">SmartTubeY</string>
     <color name="card_default_text">#AAAAAA</color>
     <color name="card_selected_text_grey">#F1F1F1</color>
+    <color name="card_default_background_dark">#0F0F0F</color>
+    <color name="card_selected_background_white">#0F0F0F</color>
+    <color name="card_selected_background_white_grey">#0F0F0F</color>
     <dimen name="card_width">264dp</dimen>
     <dimen name="card_height">148.5dp</dimen>
     <dimen name="grid_item_horizontal_spacing">18dp</dimen>

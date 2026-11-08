@@ -61,6 +61,7 @@ public class PersonalVideoCardPresenter extends VideoCardPresenter {
         TextView subtitle = card.findViewById(R.id.content_text);
         if (subtitle != null) {
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
             subtitle.setIncludeFontPadding(false);
             subtitle.setPadding(0, dp(context, 4), 0, 0);
         }
