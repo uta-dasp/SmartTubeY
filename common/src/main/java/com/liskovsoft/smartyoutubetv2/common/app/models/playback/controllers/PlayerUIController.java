@@ -186,6 +186,40 @@ public class PlayerUIController extends BasePlayerController {
         }
     }
 
+    /** Opens the real subtitle tracks together, while the long action retains all subtitle settings. */
+    public boolean showBasicSubtitleDialog(CharSequence title, String disabledTitle) {
+        if (getPlayer() == null) {
+            return false;
+        }
+        List<FormatItem> formats = getPlayer().getSubtitleFormats();
+        if (formats == null || formats.isEmpty()) {
+            return false;
+        }
+
+        // Reordering preferred languages must not mutate the engine's track list.
+        List<FormatItem> choices = new ArrayList<>(formats);
+        reorderSubtitles(choices);
+        AppDialogPresenter settingsPresenter = getAppDialogPresenter();
+        fitVideoIntoDialog();
+        settingsPresenter.appendRadioCategory(title,
+                UiOptionItem.from(choices, this::selectSubtitleOption, disabledTitle));
+        settingsPresenter.showDialog(title, mSetSubtitleButtonState);
+        return true;
+    }
+
+    private void selectSubtitleOption(OptionItem option) {
+        if (getPlayer() == null) {
+            return;
+        }
+        FormatItem format = UiOptionItem.toFormat(option);
+        if (format == null) {
+            return;
+        }
+        enableSubtitleForChannel(!format.isDefault());
+        getPlayer().setFormat(format);
+        getPlayerData().setFormat(format);
+    }
+
     private void onSubtitleLongClicked() {
         if (getPlayer() == null) {
             return;
@@ -204,13 +238,7 @@ public class PlayerUIController extends BasePlayerController {
                     value -> value.isDefault() || !SubtitleTrack.isAuto(value.getLanguage()));
             reorderSubtitles(subtitleOrigFormats);
             settingsPresenter.appendRadioCategory(subtitlesOrigCategoryTitle,
-                    UiOptionItem.from(subtitleOrigFormats,
-                            option -> {
-                                FormatItem format = UiOptionItem.toFormat(option);
-                                enableSubtitleForChannel(!format.isDefault());
-                                getPlayer().setFormat(format);
-                                getPlayerData().setFormat(format);
-                            },
+                    UiOptionItem.from(subtitleOrigFormats, this::selectSubtitleOption,
                             getContext().getString(R.string.subtitles_disabled)));
             settingsPresenter.showDialog();
         }));
@@ -221,13 +249,7 @@ public class PlayerUIController extends BasePlayerController {
                     value -> value.isDefault() || SubtitleTrack.isAuto(value.getLanguage()));
             reorderSubtitles(subtitleAutoFormats);
             settingsPresenter.appendRadioCategory(subtitlesAutoCategoryTitle,
-                    UiOptionItem.from(subtitleAutoFormats,
-                            option -> {
-                                FormatItem format = UiOptionItem.toFormat(option);
-                                enableSubtitleForChannel(!format.isDefault());
-                                getPlayer().setFormat(format);
-                                getPlayerData().setFormat(format);
-                            },
+                    UiOptionItem.from(subtitleAutoFormats, this::selectSubtitleOption,
                             getContext().getString(R.string.subtitles_disabled)));
             settingsPresenter.showDialog();
         }));
