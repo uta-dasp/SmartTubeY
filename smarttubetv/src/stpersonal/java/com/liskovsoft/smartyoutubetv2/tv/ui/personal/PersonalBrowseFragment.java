@@ -246,7 +246,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         account.setFocusable(true);
         account.setBackground(buttonBackground(18));
         avatar = new ImageView(requireContext());
-        avatar.setImageResource(android.R.drawable.ic_menu_myplaces);
+        avatar.setImageResource(R.drawable.personal_account_placeholder);
         account.addView(avatar, new LinearLayout.LayoutParams(dp(27), dp(27)));
         accountName = text(getString(R.string.personal_guest), 15);
         accountName.setSingleLine(true);
@@ -598,7 +598,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         if (account != null && account.getAvatarImageUrl() != null) {
             Glide.with(this).load(account.getAvatarImageUrl()).circleCrop().into(avatar);
         } else {
-            avatar.setImageResource(android.R.drawable.ic_menu_myplaces);
+            avatar.setImageResource(R.drawable.personal_account_placeholder);
         }
     }
 

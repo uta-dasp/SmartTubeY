@@ -308,7 +308,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
         Glide.with(this).clear(accountAvatar);
         if(account!=null&&!TextUtils.isEmpty(account.getAvatarImageUrl()))
             Glide.with(this).load(account.getAvatarImageUrl()).circleCrop().into(accountAvatar);
-        else accountAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
+        else accountAvatar.setImageResource(R.drawable.personal_account_placeholder);
     }
 
     @Override public void onPersonalAccountChooserClosed() {
