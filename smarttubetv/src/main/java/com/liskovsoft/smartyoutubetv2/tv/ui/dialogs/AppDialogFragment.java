@@ -385,6 +385,15 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
             return view;
         }
 
+        @Override
+        public void onResume() {
+            super.onResume();
+            if (mManager != null && PersonalPlayerPresentation.isEnabled(getActivity())) {
+                // Child Back restores this retained screen; its engine-backed summaries may have changed.
+                mManager.refreshDynamicDescriptions(getPreferenceScreen());
+            }
+        }
+
         private void initPrefs() {
             PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(mExtractedContext);
             setPreferenceScreen(screen);

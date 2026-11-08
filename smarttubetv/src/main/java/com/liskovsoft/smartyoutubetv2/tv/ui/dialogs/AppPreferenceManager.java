@@ -7,10 +7,12 @@ import androidx.preference.DialogPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.MultiSelectListPreference;
 import androidx.preference.Preference;
+import androidx.preference.PreferenceGroup;
 import androidx.preference.CheckBoxPreference;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.other.ChatPreference;
@@ -116,7 +118,12 @@ public class AppPreferenceManager {
 
         if (category.options.size() == 1) {
             OptionItem item = category.options.get(0);
-            Preference preference = new Preference(mContext);
+            boolean dynamicDescription =
+                    com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(mContext)
+                            && item instanceof UiOptionItem.DynamicDescription;
+            Preference preference = dynamicDescription
+                    ? new DynamicDescriptionPreference(mContext, (UiOptionItem.DynamicDescription) item)
+                    : new Preference(mContext);
             preference.setPersistent(false);
             preference.setTitle(item.getTitle());
             if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(mContext)) {
@@ -138,6 +145,50 @@ public class AppPreferenceManager {
         }
 
         return result;
+    }
+
+    /** Refresh only explicitly dynamic rows without replacing the screen or moving focus. */
+    public void refreshDynamicDescriptions(PreferenceGroup group) {
+        if (group == null) return;
+        for (int index = 0; index < group.getPreferenceCount(); index++) {
+            Preference preference = group.getPreference(index);
+            if (preference instanceof DynamicDescriptionPreference) {
+                ((DynamicDescriptionPreference) preference).refreshDescription();
+            } else if (preference instanceof PreferenceGroup) {
+                refreshDynamicDescriptions((PreferenceGroup) preference);
+            }
+        }
+    }
+
+    private static final class DynamicDescriptionPreference extends Preference {
+        private final UiOptionItem.DynamicDescription mItem;
+        private final Runnable mRefreshDescription = this::refreshDescription;
+
+        DynamicDescriptionPreference(Context context, UiOptionItem.DynamicDescription item) {
+            super(context);
+            mItem = item;
+        }
+
+        @Override
+        public CharSequence getSummary() {
+            return mItem != null ? mItem.getDescription() : super.getSummary();
+        }
+
+        @Override
+        public void onAttached() {
+            super.onAttached();
+            mItem.addDescriptionListener(mRefreshDescription);
+        }
+
+        @Override
+        public void onDetached() {
+            mItem.removeDescriptionListener(mRefreshDescription);
+            super.onDetached();
+        }
+
+        void refreshDescription() {
+            notifyChanged();
+        }
     }
 
     public Preference createSwitchPreference(OptionCategory category) {

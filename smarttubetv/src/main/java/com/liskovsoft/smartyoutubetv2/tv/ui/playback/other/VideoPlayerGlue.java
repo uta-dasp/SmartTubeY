@@ -99,6 +99,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private int mPreviousAction = KeyEvent.ACTION_UP;
     private final Action mPersonalSettingsAction;
     private String mPersonalQualityInfo;
+    private final Map<Integer, UiOptionItem.DynamicDescription> mPersonalSettingItems = new HashMap<>();
 
     public VideoPlayerGlue(
             Context context,
@@ -322,9 +323,13 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private void appendPersonalSetting(AppDialogPresenter dialog, int title, int id, boolean longAction) {
         Action action = mActions.get(id);
         if (action != null) {
-            CharSequence description = personalSettingDescription(title, action);
-            dialog.appendSingleButton(UiOptionItem.from(getContext().getString(title), description,
-                    option -> {
+            UiOptionItem.DynamicDescription item = mPersonalSettingItems.get(title);
+            if (item == null) {
+                item = new UiOptionItem.DynamicDescription() {
+                    @Override public CharSequence getTitle() { return getContext().getString(title); }
+                    @Override public CharSequence getDescription() { return personalSettingDescription(title, action); }
+                    @Override public Object getData() { return action; }
+                    @Override public void onSelect(boolean selected) {
                         if ((title == R.string.personal_player_quality || title == R.string.personal_player_audio)
                                 && showPersonalFormatDialog(title)) {
                             return;
@@ -337,7 +342,11 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
                         } else {
                             onActionClicked(action);
                         }
-                    }, false, action));
+                    }
+                };
+                mPersonalSettingItems.put(title, item);
+            }
+            dialog.appendSingleButton(item);
         }
     }
 
@@ -427,6 +436,13 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     public void setQualityInfo(String info) {
         super.setQualityInfo(info);
         mPersonalQualityInfo = info;
+        refreshPersonalSettingDescriptions();
+    }
+
+    private void refreshPersonalSettingDescriptions() {
+        for (UiOptionItem.DynamicDescription item : mPersonalSettingItems.values()) {
+            item.notifyDescriptionChanged();
+        }
     }
 
     @Override
@@ -488,6 +504,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
 
     public void setButtonState(int buttonId, int buttonState) {
         setActionIndex(mActions.get(buttonId), buttonState);
+        refreshPersonalSettingDescriptions();
     }
 
     public void setChannelIcon(String iconUrl) {

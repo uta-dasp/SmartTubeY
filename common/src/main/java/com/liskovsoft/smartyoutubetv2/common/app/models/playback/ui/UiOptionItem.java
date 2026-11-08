@@ -3,9 +3,33 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class UiOptionItem implements OptionItem {
+    /** A description read from current state when its preference is rebound or resumed. */
+    public abstract static class DynamicDescription extends UiOptionItem {
+        private final Set<Runnable> mDescriptionListeners = new HashSet<>();
+
+        @Override
+        public abstract CharSequence getDescription();
+
+        public void addDescriptionListener(Runnable listener) {
+            if (listener != null) mDescriptionListeners.add(listener);
+        }
+
+        public void removeDescriptionListener(Runnable listener) {
+            mDescriptionListeners.remove(listener);
+        }
+
+        public void notifyDescriptionChanged() {
+            for (Runnable listener : new ArrayList<>(mDescriptionListeners)) {
+                listener.run();
+            }
+        }
+    }
+
     private int mId;
     private CharSequence mTitle;
     private CharSequence mDescription;
