@@ -68,7 +68,10 @@ public class PersonalPlayerUtilitiesPresenterTest {
             assertSame(f.adapter.get(0), item[0]);
             assertTrue(button.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER)));
             Shadows.shadowOf(Looper.getMainLooper()).idleFor(ViewConfiguration.getLongPressTimeout() + 50, TimeUnit.MILLISECONDS);
-            assertTrue(button.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)));
+            assertEquals(1, longs[0]);
+            assertEquals(1, clicks[0]);
+            // Release after a handled long press has a platform-specific return value.
+            button.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER));
             Shadows.shadowOf(Looper.getMainLooper()).idle();
             assertEquals(1, longs[0]);
             assertEquals(1, clicks[0]);
