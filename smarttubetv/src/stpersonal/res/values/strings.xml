@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">SmartTubeY</string>
+    <string name="browse_title" translatable="false">SmartTubeY</string>
+    <string name="search_label" translatable="false">SmartTubeY</string>
+    <string name="settings_description" translatable="false">SmartTubeY Videos</string>
+</resources>

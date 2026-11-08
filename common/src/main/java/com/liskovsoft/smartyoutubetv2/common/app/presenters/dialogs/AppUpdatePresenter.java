@@ -48,7 +48,15 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
         sInstance = null;
     }
 
+    public static boolean isUpdateSupported(Context context) {
+        return context != null && context.getResources().getStringArray(R.array.update_urls).length > 0;
+    }
+
     public void start(boolean forceCheck) {
+        if (mUpdateManifestUrls.length == 0) {
+            return;
+        }
+
         mIsForceCheck = forceCheck;
 
         if (forceCheck) {

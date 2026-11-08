@@ -44,13 +44,12 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
 
         String country = LocaleUtility.getCurrentLocale(getContext()).getCountry();
 
-        appendUpdateCheckButton(settingsPresenter);
-
-        appendAutoUpdateSwitch(settingsPresenter);
-
-        appendUpdateChangelogButton(settingsPresenter);
-
-        appendUpdateSource(settingsPresenter);
+        if (AppUpdatePresenter.isUpdateSupported(getContext())) {
+            appendUpdateCheckButton(settingsPresenter);
+            appendAutoUpdateSwitch(settingsPresenter);
+            appendUpdateChangelogButton(settingsPresenter);
+            appendUpdateSource(settingsPresenter);
+        }
 
         appendInstallBridge(settingsPresenter);
 

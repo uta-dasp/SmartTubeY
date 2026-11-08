@@ -47,6 +47,7 @@ android {
     productFlavors {
         stbeta {}
         ststable {}
+        stpersonal {}
         stfdroid {}
     }
 }

@@ -506,7 +506,7 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
     }
 
     protected void appendUpdateCheckButton() {
-        if (!mIsUpdateCheckEnabled) {
+        if (!mIsUpdateCheckEnabled || !AppUpdatePresenter.isUpdateSupported(getContext())) {
             return;
         }
 

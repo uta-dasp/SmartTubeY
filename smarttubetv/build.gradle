@@ -123,7 +123,7 @@ android {
     // https://stackoverflow.com/questions/18332474/how-to-set-versionname-in-apk-filename-using-gradle
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            def project = "SmartTube"
+            def project = variant.flavorName == "stpersonal" ? "SmartTubeY" : "SmartTube"
             def flavor = variant.productFlavors[-1].name.substring(2) // remove st prefix
             def buildType = variant.buildType.name.take(1)
             def version = variant.versionName
@@ -165,6 +165,10 @@ android {
         }
         ststable {
             applicationId "org.smarttube.stable"
+            targetSdkVersion project.properties.compileSdkVersion
+        }
+        stpersonal {
+            applicationId "org.smarttubey.personal"
             targetSdkVersion project.properties.compileSdkVersion
         }
         stfdroid {

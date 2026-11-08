@@ -33,9 +33,10 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
 
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
-        appendAutoUpdateSwitch(settingsPresenter);
-
-        appendUpdateCheckButton(settingsPresenter);
+        if (AppUpdatePresenter.isUpdateSupported(getContext())) {
+            appendAutoUpdateSwitch(settingsPresenter);
+            appendUpdateCheckButton(settingsPresenter);
+        }
 
         appendInstallBridge(settingsPresenter);
 
