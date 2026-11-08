@@ -22,6 +22,7 @@ import android.text.TextWatcher;
 import android.text.style.StyleSpan;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.KeyCharacterMap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -100,6 +101,7 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
     private boolean editing=true, numeric, changingInput, loading, autofocus, firstResume=true, listening;
     private String submittedQuery, restoredQuery, restoreVideoKey;
     private int tagsGeneration;
+    private int pendingDeadAccent;
     private Video pausedVideo;
 
     @Override public void onCreate(@Nullable Bundle state) {
@@ -561,6 +563,30 @@ public class PersonalSearchFragment extends Fragment implements SearchView, Sear
     @Override public void focusOnSearchField() {enterEditing();microphone.requestFocus();}
     @Override public boolean hasResults() {return resultRows!=null&&resultRows.size()>0;}
     @Override public boolean onSearchKeyDown(int keyCode,KeyEvent event) {
+        // Focus stays on the TV keyboard while Bluetooth/ADB keyboards send ordinary text.
+        // An EditText that owns focus performs its own editing before the Activity fallback.
+        if(input!=null&&!input.hasFocus()&&!event.isCtrlPressed()&&!event.isMetaPressed()) {
+            if(keyCode==KeyEvent.KEYCODE_DEL) {
+                enterEditing();
+                if(pendingDeadAccent!=0)pendingDeadAccent=0;else deleteCharacter();
+                return true;
+            }
+            int character=event.getUnicodeChar();
+            if((character&KeyCharacterMap.COMBINING_ACCENT)!=0) {
+                pendingDeadAccent=character&KeyCharacterMap.COMBINING_ACCENT_MASK;
+                return true;
+            }
+            if(character!=0&&Character.isValidCodePoint(character)&&!Character.isISOControl(character)) {
+                enterEditing();
+                if(pendingDeadAccent!=0) {
+                    int combined=KeyCharacterMap.getDeadChar(pendingDeadAccent,character);
+                    if(combined!=0)character=combined;else insert(new String(Character.toChars(pendingDeadAccent)));
+                    pendingDeadAccent=0;
+                }
+                insert(new String(Character.toChars(character)));
+                return true;
+            }
+        }
         if(keyCode==KeyEvent.KEYCODE_MENU){
             // Card presenters already dispatch MENU to their contextual action handler.
             if(!resultsContainer.hasFocus())presenter.onSearchSettingsClicked();return true;
