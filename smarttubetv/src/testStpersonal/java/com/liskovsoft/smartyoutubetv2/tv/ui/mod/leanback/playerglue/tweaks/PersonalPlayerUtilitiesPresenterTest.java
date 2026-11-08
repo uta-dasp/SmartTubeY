@@ -38,8 +38,14 @@ public class PersonalPlayerUtilitiesPresenterTest {
             for (int index = 0; index < 15; index++) key(f.button(index), KeyEvent.KEYCODE_DPAD_RIGHT);
             assertTrue(f.button(15).isFocused());
             assertTrue(f.holder.scroll.getScrollX() > 0);
+            assertTrue(f.holder.cells.get(15).getRight() <= f.holder.scroll.getScrollX() + f.holder.scroll.getWidth());
             key(f.button(15), KeyEvent.KEYCODE_DPAD_RIGHT);
             assertTrue(f.button(15).isFocused());
+            for (int index = 15; index > 0; index--) key(f.button(index), KeyEvent.KEYCODE_DPAD_LEFT);
+            assertTrue(f.button(0).isFocused());
+            assertTrue(f.holder.cells.get(0).getLeft() >= f.holder.scroll.getScrollX());
+            assertTrue(f.holder.cells.get(0).getRight() <= f.holder.scroll.getScrollX() + f.holder.scroll.getWidth());
+            for (int index = 0; index < 15; index++) key(f.button(index), KeyEvent.KEYCODE_DPAD_RIGHT);
             key(f.button(15), KeyEvent.KEYCODE_DPAD_DOWN);
             assertTrue(f.progress.isFocused());
             assertTrue(f.presenter.focusLast(f.holder));

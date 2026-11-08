@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks;
 
+import android.graphics.Rect;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -93,6 +94,8 @@ final class PersonalPlayerUtilitiesPresenter extends Presenter {
                 if (style != null) style.onFocusChange(view, focused);
                 if (focused) {
                     lastFocus = index;
+                    View cell = cells.get(index);
+                    cell.requestRectangleOnScreen(new Rect(0, 0, cell.getWidth(), cell.getHeight()), true);
                     if (data != null && onSelected != null) onSelected.onControlSelected(button, adapter.get(index), data);
                 }
             });
