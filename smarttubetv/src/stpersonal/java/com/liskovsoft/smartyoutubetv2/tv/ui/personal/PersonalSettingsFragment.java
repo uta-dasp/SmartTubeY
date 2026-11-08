@@ -117,7 +117,7 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
         openButton.setPadding(dp(20), 0, dp(20), 0);
         openButton.setOnClickListener(view -> { if (inlineModel != null) openAllOptions(); else openSelected(); });
         openButton.setOnKeyListener((view, keyCode, event) -> {
-            if ((keyCode == KeyEvent.KEYCODE_DPAD_LEFT || (keyCode == KeyEvent.KEYCODE_BACK && inlineModel != null)) && !categories.isEmpty()) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && !categories.isEmpty()) {
                 if (event.getAction() == KeyEvent.ACTION_DOWN) categories.get(selected).requestFocus();
                 return true;
             }
@@ -333,7 +333,7 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
             row.setOnFocusChangeListener((view, focused) -> { if (focused) focusedOption = position; });
             row.setOnClickListener(view -> openOption(category, value));
             row.setOnKeyListener((view, keyCode, event) -> {
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_BACK) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     if (event.getAction() == KeyEvent.ACTION_DOWN && selected < categories.size()) categories.get(selected).requestFocus();
                     return true;
                 }
@@ -381,6 +381,13 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
     private void focusOption() {
         if (!optionRows.isEmpty()) optionRows.get(Math.min(focusedOption, optionRows.size() - 1)).requestFocus();
         else if (openButton != null) openButton.requestFocus();
+    }
+
+    /** The browse host dispatches Back/Left before descendants receive those keys. */
+    boolean focusCategoryFromOptions() {
+        return inlineModel != null && inlineOptions != null && openButton != null &&
+                (inlineOptions.hasFocus() || openButton.hasFocus()) && selected < categories.size() &&
+                categories.get(selected).requestFocus();
     }
 
     private void closeInlineOptions() {

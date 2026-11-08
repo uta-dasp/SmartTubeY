@@ -739,6 +739,12 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
                 return true;
             }
             if (event.getAction() == KeyEvent.ACTION_DOWN && consumedBack) return true;
+            if (event.getAction() == KeyEvent.ACTION_DOWN && factory != null &&
+                    factory.getCurrentFragment() instanceof PersonalSettingsFragment &&
+                    ((PersonalSettingsFragment) factory.getCurrentFragment()).focusCategoryFromOptions()) {
+                consumedBack = true;
+                return true;
+            }
             if (event.getAction() == KeyEvent.ACTION_DOWN && advancedOpen && root != null && isInside(root.findFocus(), rail)) {
                 if (advancedButton != null) advancedButton.requestFocus();
                 setAdvancedOpen(false);
@@ -771,6 +777,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             return true;
         }
         if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT && isInside(focus, content)) {
+            if (factory != null && factory.getCurrentFragment() instanceof PersonalSettingsFragment &&
+                    ((PersonalSettingsFragment) factory.getCurrentFragment()).focusCategoryFromOptions()) return true;
             ViewParent ancestor = focus != null ? focus.getParent() : null;
             while (ancestor instanceof View && ancestor != content) {
                 if (ancestor instanceof HorizontalGridView) {
