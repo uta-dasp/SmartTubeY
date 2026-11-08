@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="personal_subscriptions_channels" type="id" />
+    <item name="personal_subscriptions_videos" type="id" />
+    <string name="personal_subscriptions_all">All</string>
+    <string name="personal_subscriptions_alphabetic">A-Z</string>
+    <string name="personal_subscriptions_most_relevant">Most relevant</string>
+    <string name="personal_subscriptions_loading_channels">Loading channels…</string>
+    <string name="personal_subscriptions_channels_retry">No channels to display. Select to retry or choose an account.</string>
+    <string name="personal_subscriptions_videos_retry">No videos to display. Select to retry.</string>
+</resources>

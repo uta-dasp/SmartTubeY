@@ -126,6 +126,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             @Override
             protected Fragment createGridFragment() {
                 if (showingLibrary && selectedSection == MediaGroup.TYPE_HISTORY) return new PersonalLibraryFragment();
+                if (selectedSection == MediaGroup.TYPE_SUBSCRIPTIONS) return new PersonalSubscriptionsFragment();
                 return new PersonalVideoGridFragment();
             }
         };
@@ -430,6 +431,7 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             savedVideos.put(selectedSection, presenter.getCurrentVideo());
         }
         selectedSection = section.getId();
+        updateContentMode();
         updateNavigationSelection();
         Fragment fragment = factory.createFragment(new PageRow(new SectionHeaderItem(section)));
         showingError = false;
@@ -441,9 +443,10 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     private void updateContentMode() {
         if (content == null) return;
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) content.getLayoutParams();
-        params.topMargin = showingLibrary ? 0 : dp(88);
+        boolean fullPage = showingLibrary || selectedSection == MediaGroup.TYPE_SUBSCRIPTIONS || selectedSection == MediaGroup.TYPE_SETTINGS;
+        params.topMargin = fullPage ? 0 : dp(88);
         content.setLayoutParams(params);
-        int visibility = showingLibrary ? View.GONE : View.VISIBLE;
+        int visibility = fullPage ? View.GONE : View.VISIBLE;
         if (microphoneHeader != null) microphoneHeader.setVisibility(visibility);
         if (searchHeader != null) searchHeader.setVisibility(visibility);
         if (brandHeader != null) brandHeader.setVisibility(visibility);
@@ -543,6 +546,10 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
                     ((PersonalLibraryFragment) factory.getCurrentFragment()).showLibraryError(data);
                     return;
                 }
+                if (factory.getCurrentFragment() instanceof PersonalSubscriptionsFragment) {
+                    ((PersonalSubscriptionsFragment) factory.getCurrentFragment()).showSubscriptionsError(data);
+                    return;
+                }
                 showingError = true;
                 showFragment(new ErrorDialogFragment(data));
             }
@@ -560,6 +567,9 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
     public void showProgressBar(boolean show) {
         handler.post(() -> {
             if (progress != null) progress.setVisibility(show ? View.VISIBLE : View.GONE);
+            if (factory.getCurrentFragment() instanceof PersonalSubscriptionsFragment) {
+                ((PersonalSubscriptionsFragment) factory.getCurrentFragment()).setAllFeedLoading(show);
+            }
         });
     }
 
