@@ -142,7 +142,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         Context context = requireContext();
         root = new RootLayout(context);
         root.setBackgroundColor(BACKGROUND);
-        root.setClipChildren(true);
+        // Focus rings and channel pills extend into the gutter beside content.
+        root.setClipChildren(false);
 
         translatedContent = new FrameLayout(context);
         translatedContent.setClipChildren(false);
