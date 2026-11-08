@@ -330,7 +330,8 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
         View item = navigationButton(section.getTitle(), section.getResId());
         if (section.getIconUrl() != null) {
             ImageView icon = (ImageView) ((LinearLayout) item).getChildAt(0);
-            icon.setImageTintList(null);
+            Drawable iconDrawable = icon.getDrawable();
+            if (iconDrawable != null) DrawableCompat.setTintList(iconDrawable, null);
             Glide.with(this).load(section.getIconUrl()).circleCrop().into(icon);
         }
         item.setOnFocusChangeListener((view, focused) -> {
@@ -464,8 +465,11 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
 
     private void requestContentFocusIfNeeded() {
         if (pendingContentFocus && content != null) {
-            content.post(() -> {
-                if (content != null && content.requestFocus()) {
+            final FrameLayout requestedContent = content;
+            final int requestedSection = selectedSection;
+            requestedContent.post(() -> {
+                if (pendingContentFocus && content == requestedContent && selectedSection == requestedSection
+                        && requestedContent.requestFocus()) {
                     pendingContentFocus = false;
                     setExpanded(false);
                 }
