@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.personal;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.graphics.Canvas;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
@@ -187,8 +188,19 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         View divider=new View(requireContext());divider.setBackgroundColor(0xFF272727);place(divider,216,96,1.5f,-1);
         heading=text(selectedChannel==null?getString(R.string.personal_subscriptions_most_relevant):selectedChannel.getTitle(),15,false);heading.setTextColor(0xFFB8B8B8);
         place(heading,232.5f,90,570,27);
-        HorizontalScrollView horizontal=new HorizontalScrollView(requireContext());
+        HorizontalScrollView horizontal=new HorizontalScrollView(requireContext()){
+            @Override protected void dispatchDraw(Canvas canvas){
+                int saved=canvas.save();
+                // The video grid is wider than this viewport. Keep scrolled cards out
+                // of the independent channel pane, allowing only the outset ring.
+                int ring=dp(4);
+                int left=getScrollX(),top=getScrollY();
+                canvas.clipRect(left-ring,top-ring,left+getWidth()+ring,top+getHeight()+ring);
+                super.dispatchDraw(canvas);canvas.restoreToCount(saved);
+            }
+        };
         horizontal.setHorizontalScrollBarEnabled(false);horizontal.setFillViewport(false);horizontal.setClipToPadding(false);
+        horizontal.setPadding(0,0,dp(48),0);
         videoGrid=new VerticalGridView(requireContext());videoGrid.setId(R.id.personal_subscriptions_videos);
         videoGrid.setNumColumns(3);videoGrid.setColumnWidth(dp(264));videoGrid.setHorizontalSpacing(dp(18));videoGrid.setVerticalSpacing(dp(57));
         videoGrid.setPadding(0,0,0,dp(35));videoGrid.setClipToPadding(false);videoGrid.setClipChildren(false);
