@@ -25,6 +25,9 @@ import com.bumptech.glide.Glide;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsItem;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
@@ -47,6 +50,12 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
     private TextView detailStatus;
     private ImageView detailIcon;
     private TextView openButton;
+    private LinearLayout inlineOptions;
+    private final List<View> optionRows = new ArrayList<>();
+    private AppDialogPresenter.DialogModel inlineModel;
+    private String inlineKey;
+    private boolean awaitingDialogReturn;
+    private int focusedOption;
     private int selected;
 
     @Override public void onCreate(@Nullable Bundle state) {
@@ -106,14 +115,20 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
         openButton.setFocusable(true); openButton.setGravity(Gravity.CENTER);
         openButton.setTextColor(colors()); openButton.setBackground(background(18, 0xFF272727));
         openButton.setPadding(dp(20), 0, dp(20), 0);
-        openButton.setOnClickListener(view -> openSelected());
+        openButton.setOnClickListener(view -> { if (inlineModel != null) openAllOptions(); else openSelected(); });
         openButton.setOnKeyListener((view, keyCode, event) -> {
-            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && !categories.isEmpty()) {
+            if ((keyCode == KeyEvent.KEYCODE_DPAD_LEFT || (keyCode == KeyEvent.KEYCODE_BACK && inlineModel != null)) && !categories.isEmpty()) {
                 if (event.getAction() == KeyEvent.ACTION_DOWN) categories.get(selected).requestFocus();
                 return true;
             }
             return false;
         });
+        inlineOptions = new LinearLayout(context);
+        inlineOptions.setOrientation(LinearLayout.VERTICAL);
+        inlineOptions.setVisibility(View.GONE);
+        LinearLayout.LayoutParams optionsParams = new LinearLayout.LayoutParams(-1, -2);
+        optionsParams.topMargin = dp(18);
+        details.addView(inlineOptions, optionsParams);
         LinearLayout.LayoutParams openParams = new LinearLayout.LayoutParams(-2, dp(38));
         openParams.topMargin = dp(25); details.addView(openButton, openParams);
         FrameLayout.LayoutParams detailParams = new FrameLayout.LayoutParams(-1, -1);
@@ -127,6 +142,7 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
         String previous = selected < items.size() ? items.get(selected).title : null;
         items.clear();
         if (group != null && group.getItems() != null) items.addAll(group.getItems());
+        if (items.isEmpty()) closeInlineOptions();
         selected = Math.min(selected, Math.max(0, items.size() - 1));
         if (previous != null) for (int i = 0; i < items.size(); i++) if (previous.equals(items.get(i).title)) selected = i;
         renderCategories();
@@ -148,7 +164,9 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
             category.setOnClickListener(view -> { select(index); openSelected(); });
             category.setOnKeyListener((view, keyCode, event) -> {
                 if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    if (event.getAction() == KeyEvent.ACTION_DOWN) openButton.requestFocus();
+                    if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                        if (inlineModel != null) focusOption(); else openSelected();
+                    }
                     return true;
                 }
                 return false;
@@ -168,19 +186,28 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
             }
             return;
         }
-        selected = Math.max(0, Math.min(index, items.size() - 1));
+        int next = Math.max(0, Math.min(index, items.size() - 1));
+        if (inlineModel != null && !key(items.get(next)).equals(inlineKey)) closeInlineOptions();
+        selected = next;
         for (int i = 0; i < categories.size(); i++) categories.get(i).setSelected(i == selected);
         refreshDetails();
     }
 
     void refreshDetails() {
         if (detailTitle == null || items.isEmpty()) return;
+        if (inlineModel != null) return;
         SettingsItem item = items.get(selected);
+        detailIcon.setVisibility(View.VISIBLE);
+        detailDescription.setVisibility(View.VISIBLE);
+        detailTitle.setGravity(Gravity.CENTER);
+        detailTitle.setTextSize(26);
+        inlineOptions.setVisibility(View.GONE);
         detailTitle.setText(item.title); detailDescription.setText(description(item));
         Glide.with(this).clear(detailIcon);
         detailIcon.setImageResource(item.imageResId > 0 ? item.imageResId : android.R.drawable.ic_menu_preferences);
         detailStatus.setText(status(item)); detailStatus.setVisibility(detailStatus.length() == 0 ? View.GONE : View.VISIBLE);
         openButton.setVisibility(View.VISIBLE);
+        openButton.setText(R.string.personal_settings_open);
         if ("settings_account".equals(key(item))) {
             Account account = MediaServiceManager.instance().getSelectedAccount();
             detailIcon.setImageResource(R.drawable.personal_account_placeholder);
@@ -228,20 +255,159 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
 
     private void openSelected() {
         if (items.isEmpty()) return;
+        if (inlineModel != null) { focusOption(); return; }
         SettingsItem item = items.get(selected);
         String password = GeneralData.instance(requireContext()).getSettingsPassword();
-        if (password == null) item.onClick.run();
+        if (password == null) openItem(item);
         else SimpleEditDialog.showPassword(requireContext(), getString(R.string.enter_settings_password), null, value -> {
-            if (Utils.passwordMatch(password, value)) { item.onClick.run(); return true; }
+            if (Utils.passwordMatch(password, value)) { openItem(item); return true; }
             return false;
         });
     }
 
-    @Override public void onResume() { super.onResume(); refreshDetails(); }
-    @Override public void clear() { items.clear(); renderCategories(); }
+    private void openItem(SettingsItem item) {
+        // These presenters synchronously build ordinary option models. Account, pairing, backup,
+        // about/update and future categories keep their original activity/dialog lifecycle.
+        if (!supportsInline(item)) { item.onClick.run(); return; }
+        AppDialogPresenter.DialogModel model = AppDialogPresenter.instance(requireContext()).captureDialog(item.onClick);
+        if (model == null) { item.onClick.run(); return; }
+        if (model.categories.isEmpty() || !model.supportsInlineSettings()) {
+            model.show(AppDialogPresenter.instance(requireContext()));
+            return;
+        }
+        inlineModel = model;
+        inlineKey = key(item);
+        focusedOption = 0;
+        model.start();
+        renderInlineOptions();
+        focusOption();
+    }
+
+    private boolean supportsInline(SettingsItem item) {
+        switch (key(item)) {
+            case "settings_language": case "settings_app": case "settings_main_ui":
+            case "settings_player": case "settings_afr": case "settings_subtitles":
+            case "settings_search": case "settings_block": case "settings_dearrow": return true;
+            default: return false;
+        }
+    }
+
+    private void renderInlineOptions() {
+        if (inlineOptions == null || inlineModel == null) return;
+        detailIcon.setVisibility(View.GONE);
+        detailDescription.setVisibility(View.GONE);
+        detailStatus.setVisibility(View.GONE);
+        detailTitle.setGravity(Gravity.START);
+        detailTitle.setTextSize(23);
+        detailTitle.setText(inlineModel.title);
+        inlineOptions.setVisibility(View.VISIBLE);
+        inlineOptions.removeAllViews();
+        optionRows.clear();
+        for (int index = 0; index < inlineModel.categories.size(); index++) {
+            final int position = optionRows.size();
+            OptionCategory category = inlineModel.categories.get(index);
+            if (category == null || category.options == null || category.options.isEmpty()) continue;
+            LinearLayout row = new LinearLayout(requireContext());
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(14), dp(10), dp(14), dp(10));
+            row.setFocusable(true);
+            row.setBackground(background(8, 0x00000000));
+            CharSequence title = !TextUtils.isEmpty(category.title) ? category.title : category.options.get(0).getTitle();
+            TextView label = text("", 15, true);
+            label.setText(title);
+            label.setTextColor(colors());
+            label.setDuplicateParentStateEnabled(true);
+            label.setMaxLines(2);
+            row.addView(label, new LinearLayout.LayoutParams(-1, -2));
+            TextView value = text("", 12, false);
+            value.setText(summary(category));
+            value.setTextColor(colors());
+            value.setDuplicateParentStateEnabled(true);
+            value.setMaxLines(2);
+            value.setEllipsize(TextUtils.TruncateAt.END);
+            value.setVisibility(TextUtils.isEmpty(value.getText()) ? View.GONE : View.VISIBLE);
+            LinearLayout.LayoutParams valueParams = new LinearLayout.LayoutParams(-1, -2);
+            valueParams.topMargin = dp(5);
+            row.addView(value, valueParams);
+            row.setOnFocusChangeListener((view, focused) -> { if (focused) focusedOption = position; });
+            row.setOnClickListener(view -> openOption(category, value));
+            row.setOnKeyListener((view, keyCode, event) -> {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_BACK) {
+                    if (event.getAction() == KeyEvent.ACTION_DOWN && selected < categories.size()) categories.get(selected).requestFocus();
+                    return true;
+                }
+                return false;
+            });
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+            rowParams.bottomMargin = dp(4);
+            inlineOptions.addView(row, rowParams);
+            optionRows.add(row);
+        }
+        openButton.setText(R.string.personal_settings_all_options);
+        openButton.setVisibility(View.VISIBLE);
+    }
+
+    private CharSequence summary(OptionCategory category) {
+        if (category.type == OptionCategory.TYPE_SINGLE_SWITCH) return getString(category.options.get(0).isSelected()
+                ? R.string.personal_settings_on : R.string.personal_settings_off);
+        if (category.type == OptionCategory.TYPE_SINGLE_BUTTON) return category.options.get(0).getDescription();
+        List<CharSequence> selectedValues = new ArrayList<>();
+        for (OptionItem option : category.options) if (option.isSelected()) selectedValues.add(option.getTitle());
+        return TextUtils.join(", ", selectedValues);
+    }
+
+    private void openOption(OptionCategory category, TextView value) {
+        if (inlineModel == null) return;
+        if (category.type == OptionCategory.TYPE_SINGLE_SWITCH) {
+            OptionItem option = category.options.get(0);
+            option.onSelect(!option.isSelected());
+            value.setText(summary(category));
+            return;
+        }
+        AppDialogPresenter presenter = AppDialogPresenter.instance(requireContext());
+        presenter.appendCategory(category);
+        // A lone button needs its preference screen; expanding it directly would auto-run it.
+        presenter.enableExpandable(category.type != OptionCategory.TYPE_SINGLE_BUTTON);
+        awaitingDialogReturn = true;
+        presenter.showDialog(!TextUtils.isEmpty(category.title) ? category.title : inlineModel.title, inlineModel::finish);
+    }
+
+    private void openAllOptions() {
+        awaitingDialogReturn = true;
+        inlineModel.show(AppDialogPresenter.instance(requireContext()));
+    }
+
+    private void focusOption() {
+        if (!optionRows.isEmpty()) optionRows.get(Math.min(focusedOption, optionRows.size() - 1)).requestFocus();
+        else if (openButton != null) openButton.requestFocus();
+    }
+
+    private void closeInlineOptions() {
+        if (inlineModel != null) inlineModel.finish();
+        inlineModel = null;
+        inlineKey = null;
+        awaitingDialogReturn = false;
+        optionRows.clear();
+        if (inlineOptions != null) { inlineOptions.removeAllViews(); inlineOptions.setVisibility(View.GONE); }
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (inlineModel != null && awaitingDialogReturn && !AppDialogPresenter.instance(requireContext()).isDialogShown()) {
+            // Rebuild from saved settings after the original dialog closes; old radio models are snapshots.
+            int previousFocus = focusedOption;
+            closeInlineOptions();
+            if (!items.isEmpty()) openItem(items.get(selected));
+            focusedOption = previousFocus;
+            focusOption();
+        }
+        refreshDetails();
+    }
+    @Override public void clear() { closeInlineOptions(); items.clear(); renderCategories(); }
     @Override public boolean isEmpty() { return items.isEmpty(); }
     @Override public void onSaveInstanceState(@NonNull Bundle state) { super.onSaveInstanceState(state); state.putInt("personal.settings.selection", selected); }
-    @Override public void onDestroyView() { root = null; categoryList = null; detailTitle = null; detailIcon = null; detailStatus = null; detailDescription = null; openButton = null; categories.clear(); super.onDestroyView(); }
+    @Override public void onDestroyView() { closeInlineOptions(); root = null; categoryList = null; detailTitle = null; detailIcon = null; detailStatus = null; detailDescription = null; openButton = null; inlineOptions = null; categories.clear(); super.onDestroyView(); }
 
     private TextView text(String value, float size, boolean medium) {
         TextView text = new TextView(requireContext()); text.setText(value); text.setTextSize(size);

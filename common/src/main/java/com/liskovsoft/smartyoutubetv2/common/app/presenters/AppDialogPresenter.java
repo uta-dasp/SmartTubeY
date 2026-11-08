@@ -37,6 +37,64 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
     private boolean mBackupIsTransparent;
     private boolean mBackupIsOverlay;
     private boolean mBackupIsExpandable;
+    private boolean mCaptureDialog;
+    private DialogModel mCapturedDialog;
+
+    /** A synchronous settings presentation, retaining the original option objects and callbacks. */
+    public static final class DialogModel {
+        public final CharSequence title;
+        public final List<OptionCategory> categories;
+        private final Set<Runnable> mOnStart;
+        private final Set<Runnable> mOnFinish;
+        private final boolean mExpandable, mTransparent, mOverlay;
+        private final int mId;
+        private final long mTimeoutMs;
+        private boolean mFinished;
+
+        private DialogModel(CharSequence title, List<OptionCategory> categories,
+                            Set<Runnable> onStart, Set<Runnable> onFinish,
+                            boolean expandable, boolean transparent, boolean overlay, int id, long timeoutMs) {
+            this.title = title;
+            this.categories = new ArrayList<>(categories);
+            mOnStart = new HashSet<>(onStart);
+            mOnFinish = new HashSet<>(onFinish);
+            mExpandable = expandable;
+            mTransparent = transparent;
+            mOverlay = overlay;
+            mId = id;
+            mTimeoutMs = timeoutMs;
+        }
+
+        public void start() {
+            if (mFinished) return;
+            Utils.runMyCallbacks(mOnStart);
+            mOnStart.clear();
+        }
+
+        public void finish() {
+            if (mFinished) return;
+            mFinished = true;
+            Utils.runMyCallbacks(mOnFinish);
+            mOnStart.clear();
+            mOnFinish.clear();
+        }
+
+        public boolean supportsInlineSettings() {
+            return !mTransparent && !mOverlay && mTimeoutMs == 0 && mId == 0;
+        }
+
+        /** Replay the complete source presentation when its original dialog is requested. */
+        public void show(AppDialogPresenter presenter) {
+            for (OptionCategory category : categories) presenter.appendCategory(category);
+            presenter.enableExpandable(mExpandable);
+            presenter.enableTransparent(mTransparent);
+            presenter.enableOverlay(mOverlay);
+            presenter.setId(mId);
+            presenter.setCloseTimeoutMs(mTimeoutMs);
+            presenter.setOnStart(this::start);
+            presenter.showDialog(title, this::finish);
+        }
+    }
 
     public AppDialogPresenter(Context context) {
         super(context);
@@ -124,6 +182,13 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
     public void showDialog(CharSequence dialogTitle, Runnable onFinish) {
         mTitle = dialogTitle;
         mOnFinish.add(onFinish);
+
+        if (mCaptureDialog) {
+            // Only the explicit synchronous action supplied to captureDialog can enter this path.
+            mCapturedDialog = new DialogModel(mTitle, mCategories, mOnStart, mOnFinish,
+                    mIsExpandable, mIsTransparent, mIsOverlay, mId, mTimeoutMs);
+            return;
+        }
         
         backupData(); // overlapped dialog fix
         resetData(); // prepare to new call
@@ -135,6 +200,45 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         getViewManager().startView(AppDialogView.class, true);
 
         setupTimeout();
+    }
+
+    /**
+     * Collect a synchronous settings root without opening an Activity. Callers must use this only
+     * for known model-building actions, never for asynchronous or account/permission flows.
+     * Existing pending dialog data is restored even when the supplied action throws.
+     */
+    public DialogModel captureDialog(Runnable action) {
+        if (action == null || mCaptureDialog || Looper.myLooper() != Looper.getMainLooper() || isDialogShown()) return null;
+        List<OptionCategory> categories = mCategories;
+        CharSequence title = mTitle;
+        boolean expandable = mIsExpandable, transparent = mIsTransparent, overlay = mIsOverlay;
+        int id = mId;
+        long timeout = mTimeoutMs;
+        Set<Runnable> onStart = new HashSet<>(mOnStart), onFinish = new HashSet<>(mOnFinish);
+        resetData();
+        mTimeoutMs = 0;
+        mOnStart.clear();
+        mOnFinish.clear();
+        mCapturedDialog = null;
+        mCaptureDialog = true;
+        try {
+            action.run();
+            return mCapturedDialog;
+        } finally {
+            mCaptureDialog = false;
+            mCapturedDialog = null;
+            mCategories = categories;
+            mTitle = title;
+            mIsExpandable = expandable;
+            mIsTransparent = transparent;
+            mIsOverlay = overlay;
+            mId = id;
+            mTimeoutMs = timeout;
+            mOnStart.clear();
+            mOnStart.addAll(onStart);
+            mOnFinish.clear();
+            mOnFinish.addAll(onFinish);
+        }
     }
 
     public void closeDialog() {

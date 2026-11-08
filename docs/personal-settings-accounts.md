@@ -35,13 +35,34 @@ its original `SettingsItem.onClick`. The known source categories are:
 | `settings_backup` | `BackupSettingsPresenter.show()` |
 | `settings_about` | Source-selected `AboutSettingsPresenter` or `AboutSimpleSettingsPresenter` |
 
-Focusing a category updates its actual description; clicking the category or its **Open
-options** button runs the source action. This preserves every option, callback, and nested
-dialog owned by its presenter. It also preserves the original settings-password comparison
-before the action runs. The detail pane shows real selected-account, interface-language,
-and build-version status where available. It makes no Premium or purchase claims.
+Focusing a category updates its actual description. Clicking the category, **Open options**,
+or Right first applies the original settings-password comparison. Language, General,
+Interface, Player, Auto frame rate, Subtitles, Search, SponsorBlock and DeArrow then build
+their original synchronous presenter models into native detail-pane option rows. No option
+callback runs on category focus. The complete source order is retained, with selected
+radio/check values and direct single-switch toggles. Accounts, pairing, backup, about/update
+and unknown categories continue to run their original action and lifecycle.
 
-Right moves from categories to the options button; Left returns to the selected category.
+`AppDialogPresenter.captureDialog` temporarily collects only that explicit synchronous
+model-building action. It restores pending dialog data and callbacks in `finally`; active
+dialogs and background-thread callers cannot enter capture. Captured models retain the
+original `OptionCategory`/`OptionItem` objects, start and finish callbacks. Transparent,
+overlay, timed or identified presentations replay their original dialog instead of using
+the native pane. The shared presenter takes the original path for every non-capture call,
+including all other flavors and all player dialogs.
+
+Selecting a radio/check category opens its original renderer, retaining dependency rules,
+mutually exclusive checkbox behavior and nested special dialogs. A button category keeps
+its original preference screen before executing its action. **All options** replays the
+complete original root, including its presentation flags and callbacks. Source finish
+callbacks run once per captured model when its original dialog closes or the inline pane
+is left; this can show a source restart notice after returning from a child option dialog.
+The pane rebuilds from saved values on return and restores its option-row focus. Native
+single switches use the original `OptionItem.onSelect` callback and refresh in place.
+
+Right or OK enters the native options; Left or Back from an option returns to the selected
+category. Selecting another category finishes the prior inline model. The detail pane
+continues to show actual account, language and version status on its category landing view.
 Reentering content targets the remembered category, and Back from settings content focuses
 the rail. Back from the rail continues through the existing browse activity behavior.
 
@@ -88,9 +109,13 @@ Settings category/options focus, opening the original Accounts manager and Back
 restoration. It did not mutate account settings. Settings full-page content mode
 is integrated. Final signed-release QA remains pending.
 
-The native shell approximates the measured reference geometry. Category options continue
-to open the existing functional presenter dialogs rather than reproducing the official
-application's complete inline option layout. Typography uses Android fonts, the management
+The native shell approximates the measured reference geometry. Ordinary settings now list
+their source options inside the detail pane; radio/check choices and special workflows
+continue to use the existing functional dialogs. They do not yet reproduce the official
+application's complete inline choice layout. The new inline pane requires integrated build,
+unit-test and TV validation. `AppDialogCaptureTest` covers original option identity and
+callbacks, callback isolation, exception cleanup and active/special-dialog fallback.
+Typography uses Android fonts, the management
 glyph uses the system font, and the backdrop is an original gradient drawing. Exact focus
 motion, long-carousel scrolling, edge clipping, and restoration after sign-in/manage
 still need complete TV coverage. Multiple/protected account switching, account

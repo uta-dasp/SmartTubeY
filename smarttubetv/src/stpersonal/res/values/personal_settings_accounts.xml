@@ -1,5 +1,8 @@
 <resources>
     <string name="personal_settings_open">Open options</string>
+    <string name="personal_settings_all_options">All options</string>
+    <string name="personal_settings_on">On</string>
+    <string name="personal_settings_off">Off</string>
     <string name="personal_settings_future_description">Open this category to view its available settings.</string>
     <string name="personal_settings_account_description">Choose an account, sign in, and manage account-specific settings.</string>
     <string name="personal_settings_remote_description">Link a phone or other supported remote to control playback.</string>
