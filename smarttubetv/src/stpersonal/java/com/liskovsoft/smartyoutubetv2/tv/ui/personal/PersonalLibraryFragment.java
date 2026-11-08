@@ -92,6 +92,20 @@ public class PersonalLibraryFragment extends PersonalVideoRowsFragment {
     @Override protected ListRowPresenter createListRowPresenter() {return new LibraryRowPresenter();}
 
     @Override public void update(VideoGroup group) {
+        if(group==null)return;
+        // Guest authCheck emits the complete local History with a fresh group ID and APPEND
+        // on every refresh. Its original grid has one surface; a rows view needs a snapshot
+        // replacement, otherwise focusing Library then selecting it creates duplicate shelves.
+        boolean localHistorySnapshot=group.getType()==MediaGroup.TYPE_HISTORY&&group.getMediaGroup()==null&&
+                group.getSection()!=null&&(group.getAction()==VideoGroup.ACTION_APPEND||group.getAction()==VideoGroup.ACTION_REPLACE);
+        if(localHistorySnapshot){
+            group.setAction(VideoGroup.ACTION_REPLACE);
+            if(getVerticalGridView()!=null&&getVerticalGridView().isComputingLayout()){
+                View view=getView();
+                if(view!=null)view.post(()->{if(isAdded()&&wrapper!=null)update(group);});
+                return;
+            }
+        }
         if(error!=null)error.setVisibility(View.GONE);
         super.update(group);
     }
