@@ -202,7 +202,7 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         horizontal.setHorizontalScrollBarEnabled(false);horizontal.setFillViewport(false);horizontal.setClipToPadding(false);
         horizontal.setPadding(0,0,dp(48),0);
         videoGrid=new VerticalGridView(requireContext());videoGrid.setId(R.id.personal_subscriptions_videos);
-        videoGrid.setNumColumns(3);videoGrid.setColumnWidth(dp(264));videoGrid.setHorizontalSpacing(dp(18));videoGrid.setVerticalSpacing(dp(57));
+        videoGrid.setNumColumns(3);videoGrid.setColumnWidth(dp(264));videoGrid.setHorizontalSpacing(dp(18));videoGrid.setVerticalSpacing(dp(32));
         videoGrid.setPadding(0,0,0,dp(35));videoGrid.setClipToPadding(false);videoGrid.setClipChildren(false);
         videoGrid.setWindowAlignment(BaseGridView.WINDOW_ALIGN_LOW_EDGE);videoGrid.setWindowAlignmentOffset(0);
         videoGrid.setWindowAlignmentOffsetPercent(BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);

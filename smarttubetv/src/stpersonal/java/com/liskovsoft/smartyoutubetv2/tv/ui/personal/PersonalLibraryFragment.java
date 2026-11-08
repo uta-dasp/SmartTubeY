@@ -68,7 +68,7 @@ public class PersonalLibraryFragment extends PersonalVideoRowsFragment {
         tileParams.leftMargin=dp(-4);tileParams.topMargin=dp(41);
         wrapper.addView(tiles,tileParams);
         FrameLayout.LayoutParams rowsParams=new FrameLayout.LayoutParams(-1,-1);
-        rowsParams.topMargin=dp(170);wrapper.addView(rows,rowsParams);
+        rowsParams.topMargin=dp(194);wrapper.addView(rows,rowsParams);
         error=new TextView(requireContext());
         error.setTextSize(15);
         error.setTextColor(new ColorStateList(new int[][]{{android.R.attr.state_focused},{}},new int[]{0xFF0F0F0F,0xFFF1F1F1}));
@@ -123,7 +123,7 @@ public class PersonalLibraryFragment extends PersonalVideoRowsFragment {
         TextView label=new TextView(requireContext());
         label.setText(title);label.setTextSize(18);label.setTextColor(0xFFF1F1F1);label.setIncludeFontPadding(false);
         label.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
-        label.setGravity(Gravity.BOTTOM);label.setMaxLines(2);label.setPadding(dp(12),0,dp(12),dp(12));
+        label.setGravity(Gravity.BOTTOM);label.setMaxLines(2);label.setPadding(dp(12),0,dp(12),dp(10.5f));
         GradientDrawable gradient=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{start,end});
         gradient.setCornerRadius(dp(9));label.setBackground(gradient);
         tile.addView(label,new FrameLayout.LayoutParams(-1,-1));
@@ -191,7 +191,7 @@ public class PersonalLibraryFragment extends PersonalVideoRowsFragment {
             TextView title=new TextView(parent.getContext());title.setTextSize(15);title.setTextColor(0xFFB8B8B8);
             title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));title.setIncludeFontPadding(false);
             float density=parent.getResources().getDisplayMetrics().density;
-            title.setPadding(0,Math.round(10*density),0,Math.round(14*density));return new ViewHolder(title);
+            title.setPadding(0,Math.round(8*density),0,Math.round(16*density));return new ViewHolder(title);
         }
         @Override public void onBindViewHolder(Presenter.ViewHolder holder,Object item){
             HeaderItem header=((Row)item).getHeaderItem();((TextView)holder.view).setText(header==null?"":header.getName());
