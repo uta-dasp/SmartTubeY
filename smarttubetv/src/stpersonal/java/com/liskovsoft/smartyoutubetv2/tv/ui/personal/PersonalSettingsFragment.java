@@ -122,6 +122,7 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
             if (focused && inlineModel != null) focusedOption = FOCUS_ALL_OPTIONS;
         });
         openButton.setOnKeyListener((view, keyCode, event) -> {
+            if (inlineModel != null && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && !categories.isEmpty()) {
                 if (event.getAction() == KeyEvent.ACTION_DOWN) categories.get(selected).requestFocus();
                 return true;
@@ -340,6 +341,7 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
             row.setOnFocusChangeListener((view, focused) -> { if (focused) focusedOption = position; });
             row.setOnClickListener(view -> openOption(category, value));
             row.setOnKeyListener((view, keyCode, event) -> {
+                if (position == 0 && keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
                 if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     if (event.getAction() == KeyEvent.ACTION_DOWN && selected < categories.size()) categories.get(selected).requestFocus();
                     return true;
