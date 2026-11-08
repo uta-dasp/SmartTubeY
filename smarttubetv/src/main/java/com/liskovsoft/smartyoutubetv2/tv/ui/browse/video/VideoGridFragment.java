@@ -54,7 +54,7 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
         }
 
         mMainPresenter = getMainPresenter();
-        mCardPresenter = isShorts() ? new ShortsCardPresenter() : new VideoCardPresenter();
+        mCardPresenter = createVideoCardPresenter();
         mBackgroundManager = ((LeanbackActivity) getActivity()).getBackgroundManager();
         mVideoGridScale = MainUIData.instance(getActivity()).getVideoGridScale();
 
@@ -69,6 +69,14 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
 
     protected VideoGroupPresenter getMainPresenter() {
         return BrowsePresenter.instance(getContext());
+    }
+
+    protected VideoCardPresenter createVideoCardPresenter() {
+        return isShorts() ? new ShortsCardPresenter() : new VideoCardPresenter();
+    }
+
+    protected VerticalGridPresenter createVerticalGridPresenter() {
+        return new CustomVerticalGridPresenter();
     }
 
     private void setupEventListeners() {
@@ -89,7 +97,7 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
     }
 
     private void setupAdapter() {
-        VerticalGridPresenter presenter = new CustomVerticalGridPresenter();
+        VerticalGridPresenter presenter = createVerticalGridPresenter();
         presenter.setNumberOfColumns(
                 GridFragmentHelper.getMaxColsNum(getContext(), isShorts() ? R.dimen.shorts_card_width : R.dimen.card_width, mVideoGridScale)
         );

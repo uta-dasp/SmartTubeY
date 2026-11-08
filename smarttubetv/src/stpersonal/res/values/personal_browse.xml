@@ -9,6 +9,7 @@
     <color name="card_selected_text_grey">#F1F1F1</color>
     <dimen name="card_width">264dp</dimen>
     <dimen name="card_height">148.5dp</dimen>
+    <dimen name="grid_item_horizontal_spacing">18dp</dimen>
     <dimen name="lb_browse_item_horizontal_spacing">18dp</dimen>
     <dimen name="lb_browse_item_vertical_spacing">24dp</dimen>
     <dimen name="lb_rounded_rect_corner_radius">9dp</dimen>

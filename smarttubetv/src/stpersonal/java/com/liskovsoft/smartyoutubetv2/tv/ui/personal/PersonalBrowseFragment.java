@@ -100,6 +100,11 @@ public class PersonalBrowseFragment extends Fragment implements BrowseView {
             protected Fragment createRowsFragment() {
                 return new PersonalVideoRowsFragment();
             }
+
+            @Override
+            protected Fragment createGridFragment() {
+                return new PersonalVideoGridFragment();
+            }
         };
     }
 

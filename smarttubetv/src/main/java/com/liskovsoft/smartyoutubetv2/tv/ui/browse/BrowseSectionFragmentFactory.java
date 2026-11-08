@@ -65,7 +65,7 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
                 fragment = createRowsFragment();
                 break;
             case BrowseSection.TYPE_GRID:
-                fragment = new VideoGridFragment();
+                fragment = createGridFragment();
                 break;
             case BrowseSection.TYPE_SHORTS_GRID:
                 fragment = new ShortsGridFragment();
@@ -97,6 +97,10 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
 
     protected Fragment createRowsFragment() {
         return new VideoRowsFragment();
+    }
+
+    protected Fragment createGridFragment() {
+        return new VideoGridFragment();
     }
 
     public void updateCurrentFragment(SettingsGroup group) {
