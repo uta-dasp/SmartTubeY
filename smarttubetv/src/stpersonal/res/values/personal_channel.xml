@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_channel_watch_live">Watch live</string>
+    <string name="personal_channel_subscribed">Subscribed</string>
+    <string name="personal_channel_subscribers">%1$s subscribers</string>
+    <string name="personal_channel_more">…more</string>
+    <string name="personal_channel_content">Channel content</string>
+    <string name="personal_channel_home">Channel home</string>
+    <string name="personal_channel_uploads">Uploads</string>
+    <string name="personal_channel_options">Channel options</string>
+    <string name="personal_channel_subscription_error">Could not update subscription. Select to retry.</string>
+    <string name="personal_channel_no_content">No channel content loaded. Select to retry.</string>
+</resources>

@@ -37,7 +37,7 @@ public class ChannelFragment extends MultipleRowsFragment implements ChannelView
         mChannelPresenter.setView(this);
 
         mProgressBarManager = new ProgressBarManager();
-        if (MainUIData.instance(getContext()).isChannelSearchBarEnabled()) {
+        if (shouldShowSearchHeader()) {
             addHeader(new ChannelHeaderCallback() {
                 @Override
                 public void onSearchSettingsClicked() {
@@ -63,6 +63,11 @@ public class ChannelFragment extends MultipleRowsFragment implements ChannelView
                 }
             });
         }
+    }
+
+    /** Flavor views may supply their own channel search control. */
+    protected boolean shouldShowSearchHeader() {
+        return MainUIData.instance(getContext()).isChannelSearchBarEnabled();
     }
 
     @Override
