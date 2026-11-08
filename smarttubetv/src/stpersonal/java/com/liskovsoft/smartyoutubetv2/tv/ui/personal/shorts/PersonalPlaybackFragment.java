@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -65,6 +66,13 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
     private int[] originalSubtitlePadding;
     private final Set<Object> dialogOwners=Collections.newSetFromMap(new IdentityHashMap<>());
     private final ViewTreeObserver.OnGlobalFocusChangeListener sideFocus=(oldFocus,newFocus)->updateMetadataCards(newFocus);
+    private final Runnable restoreAfterDialog=new Runnable(){
+        @Override public void run(){
+            if(wrapper==null||!shortsMode||!isResumed())return;
+            if(AppDialogPresenter.instance(requireContext()).isDialogShown())wrapper.postDelayed(this,100);
+            else applyPresentation();
+        }
+    };
 
     @Override public View onCreateView(LayoutInflater inflater,ViewGroup parent,Bundle state){
         playerRoot=super.onCreateView(inflater,parent,state);
@@ -74,9 +82,9 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
         wrapper.addView(background,new FrameLayout.LayoutParams(-1,-1));background.setVisibility(View.GONE);
         wrapper.addView(playerRoot,new FrameLayout.LayoutParams(-1,-1));
         surface=playerRoot.findViewById(R.id.surface_root);subtitles=playerRoot.findViewById(R.id.leanback_subtitles);
-        originalSurface=new FrameLayout.LayoutParams((FrameLayout.LayoutParams)surface.getLayoutParams());
-        originalSurfaceBackground=surface.getBackground();originalSurfaceClipping=surface.getClipToOutline();
-        originalSubtitles=new FrameLayout.LayoutParams((FrameLayout.LayoutParams)subtitles.getLayoutParams());
+        originalSurface=copyParams((FrameLayout.LayoutParams)surface.getLayoutParams());
+        originalSurfaceBackground=surface.getBackground();originalSurfaceClipping=Build.VERSION.SDK_INT>=21&&surface.getClipToOutline();
+        originalSubtitles=copyParams((FrameLayout.LayoutParams)subtitles.getLayoutParams());
         originalSubtitlePadding=new int[]{subtitles.getPaddingLeft(),subtitles.getPaddingTop(),subtitles.getPaddingRight(),subtitles.getPaddingBottom()};
         buildFeed();buildSide();buildRail();
         wrapper.getViewTreeObserver().addOnGlobalFocusChangeListener(sideFocus);
@@ -91,7 +99,7 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
         shownVideo=video;
         boolean next=video!=null&&(video.isShorts||video.belongsToShortsGroup());
         if(next&&!shortsMode&&wrapper!=null&&dialogOwners.isEmpty())snapshotNormalLayout();
-        boolean changed=video!=null&&!java.util.Objects.equals(video.videoId,shownId);
+        boolean changed=video!=null&&!android.text.TextUtils.equals(video.videoId,shownId);
         if(changed){shownId=video.videoId;channelIcon=null;}
         if(next)PersonalShortsSession.retain(video);
         boolean previousMode=shortsMode;boolean entered=next&&!previousMode;shortsMode=next;
@@ -214,25 +222,31 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
     private void showRegularControls(){regularControls=true;applyPresentation();super.showControls(true);}
 
     private boolean activeShorts(){return shortsMode&&wrapper!=null&&!isInPIPMode();}
+    private boolean hasLegacyDialog(){
+        AppDialogPresenter dialog=AppDialogPresenter.instance(requireContext());
+        return dialog.isDialogShown()&&(dialog.isComments()||dialog.isTransparent()||dialog.isOverlay());
+    }
     private void snapshotNormalLayout(){
         if(surface==null||subtitles==null)return;
-        originalSurface=new FrameLayout.LayoutParams((FrameLayout.LayoutParams)surface.getLayoutParams());
-        originalSubtitles=new FrameLayout.LayoutParams((FrameLayout.LayoutParams)subtitles.getLayoutParams());
-        originalSurfaceBackground=surface.getBackground();originalSurfaceClipping=surface.getClipToOutline();
+        originalSurface=copyParams((FrameLayout.LayoutParams)surface.getLayoutParams());
+        originalSubtitles=copyParams((FrameLayout.LayoutParams)subtitles.getLayoutParams());
+        originalSurfaceBackground=surface.getBackground();originalSurfaceClipping=Build.VERSION.SDK_INT>=21&&surface.getClipToOutline();
         originalSubtitlePadding=new int[]{subtitles.getPaddingLeft(),subtitles.getPaddingTop(),subtitles.getPaddingRight(),subtitles.getPaddingBottom()};
     }
     private void applyPresentation(){
         if(wrapper==null||(!shortsMode&&!restorePending))return;boolean active=activeShorts();
-        boolean chrome=active&&!regularControls&&dialogOwners.isEmpty();
+        boolean legacyDialog=hasLegacyDialog();
+        boolean chrome=active&&!regularControls&&dialogOwners.isEmpty()&&!legacyDialog;
         background.setVisibility(active?View.VISIBLE:View.GONE);side.setVisibility(chrome?View.VISIBLE:View.GONE);
         feed.setVisibility(chrome?View.VISIBLE:View.GONE);rail.setVisibility(chrome&&railShown?View.VISIBLE:View.GONE);
-        if(!dialogOwners.isEmpty())return;
+        // Comments/transparent overlays retain their original zoom/gravity transforms.
+        if(!dialogOwners.isEmpty()||legacyDialog)return;
         if(active){
             setBounds(surface,296,4.5f,304,531);setBounds(subtitles,296,4.5f,304,531);subtitles.setPadding(dp(4),0,dp(4),dp(4));
-            GradientDrawable outline=new GradientDrawable();outline.setColor(0x00000000);outline.setCornerRadius(dp(10));surface.setBackground(outline);surface.setClipToOutline(true);
+            if(Build.VERSION.SDK_INT>=21){GradientDrawable outline=new GradientDrawable();outline.setColor(0x00000000);outline.setCornerRadius(dp(10));surface.setBackground(outline);surface.setClipToOutline(true);}
         }else{
-            surface.setLayoutParams(new FrameLayout.LayoutParams(originalSurface));surface.setBackground(originalSurfaceBackground);surface.setClipToOutline(originalSurfaceClipping);
-            subtitles.setLayoutParams(new FrameLayout.LayoutParams(originalSubtitles));subtitles.setPadding(originalSubtitlePadding[0],originalSubtitlePadding[1],originalSubtitlePadding[2],originalSubtitlePadding[3]);
+            surface.setLayoutParams(copyParams(originalSurface));surface.setBackground(originalSurfaceBackground);if(Build.VERSION.SDK_INT>=21)surface.setClipToOutline(originalSurfaceClipping);
+            subtitles.setLayoutParams(copyParams(originalSubtitles));subtitles.setPadding(originalSubtitlePadding[0],originalSubtitlePadding[1],originalSubtitlePadding[2],originalSubtitlePadding[3]);
             restorePending=false;
         }
     }
@@ -261,7 +275,10 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
                 (event.getKeyCode()==KeyEvent.KEYCODE_MEDIA_FAST_FORWARD||event.getKeyCode()==KeyEvent.KEYCODE_MEDIA_REWIND))showRegularControls();
         super.onDispatchKeyEvent(event);
     }
+    @Override public void onResume(){super.onResume();if(wrapper!=null&&shortsMode)wrapper.post(restoreAfterDialog);}
+    @Override public void onPause(){if(wrapper!=null)wrapper.removeCallbacks(restoreAfterDialog);super.onPause();}
     @Override public void onDestroyView(){
+        if(wrapper!=null)wrapper.removeCallbacks(restoreAfterDialog);
         if(wrapper!=null)wrapper.getViewTreeObserver().removeOnGlobalFocusChangeListener(sideFocus);
         MediaServiceManager.instance().removeAccountListener(this);
         if(background!=null)Glide.with(background).clear(background);if(authorAvatar!=null)Glide.with(authorAvatar).clear(authorAvatar);
@@ -269,6 +286,12 @@ public class PersonalPlaybackFragment extends PlaybackFragment implements MediaS
         dialogOwners.clear();wrapper=null;surface=null;subtitles=null;feed=null;rail=null;side=null;background=null;authorAvatar=null;super.onDestroyView();
     }
     private PlaybackPresenter presenter(){return PlaybackPresenter.instance(requireContext());}
+    private static FrameLayout.LayoutParams copyParams(FrameLayout.LayoutParams from){
+        FrameLayout.LayoutParams copy=new FrameLayout.LayoutParams(from.width,from.height,from.gravity);
+        copy.setMargins(from.leftMargin,from.topMargin,from.rightMargin,from.bottomMargin);
+        if(from.isMarginRelative()){copy.setMarginStart(from.getMarginStart());copy.setMarginEnd(from.getMarginEnd());}
+        return copy;
+    }
     private void setBounds(View view,float x,float y,float width,float height){FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(dp(width),dp(height),Gravity.TOP|Gravity.LEFT);params.leftMargin=dp(x);params.topMargin=dp(y);view.setLayoutParams(params);}
     private void place(FrameLayout parent,View view,float x,float y,float width,float height){FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(width<0?(int)width:dp(width),height<0?(int)height:dp(height));params.leftMargin=dp(x);params.topMargin=dp(y);parent.addView(view,params);}
     private int dp(float value){return PersonalVideoCardPresenter.dp(requireContext(),value);}
