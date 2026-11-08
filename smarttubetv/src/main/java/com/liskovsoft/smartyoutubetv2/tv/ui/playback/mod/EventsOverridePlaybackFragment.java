@@ -8,6 +8,8 @@ import androidx.leanback.app.PlaybackSupportFragment;
 import androidx.leanback.widget.VerticalGridView;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.mod.surface.SurfacePlaybackFragment;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowView;
 
 /**
  *  Every successfully handled event invokes {@link PlaybackSupportFragment#tickle} that makes ui to appear.
@@ -41,6 +43,18 @@ public class EventsOverridePlaybackFragment extends SurfacePlaybackFragment {
         if (event instanceof KeyEvent) {
             keyCode = ((KeyEvent) event).getKeyCode();
             keyAction = ((KeyEvent) event).getAction();
+            if (PersonalPlayerPresentation.isEnabled(getContext()) && getView() != null) {
+                PlaybackTransportRowView row = getView().findViewById(com.liskovsoft.smartyoutubetv2.tv.R.id.transport_row);
+                boolean mediaSeek = keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD || keyCode == KeyEvent.KEYCODE_MEDIA_REWIND
+                        || keyCode == KeyEvent.KEYCODE_PLUS || keyCode == KeyEvent.KEYCODE_MINUS;
+                boolean seek = mediaSeek || keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
+                if (row != null) {
+                    if (keyAction == KeyEvent.ACTION_DOWN && (controlsHidden || mediaSeek)) {
+                        row.setPersonalSeekFocusRequested(seek);
+                        if (seek) row.findViewById(com.liskovsoft.smartyoutubetv2.tv.R.id.playback_progress).requestFocus();
+                    } else if (keyAction == KeyEvent.ACTION_UP && seek) row.setPersonalSeekFocusRequested(false);
+                }
+            }
             if (getInputEventHandler() != null) {
                 // VideoPlayerGlue handler
                 consumeEvent = getInputEventHandler().onKey(getView(), keyCode, (KeyEvent) event);

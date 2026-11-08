@@ -51,6 +51,32 @@ is relabeled as Auto, and unavailable official audio processing features are not
 The personal control bar also bypasses the legacy wrap-content center-margin measurement,
 so its edge groups anchor to the actual dock width.
 
+## Measured overlay refinements
+
+The personal title uses 21 sp medium Android sans-serif and its description dock moves up
+12.5 dp. Compact overlay metadata uses the real author, provider view count, and browse item's
+production/relative date; full metadata supplies a date only when the compact source is absent.
+Rich description, ratings and subscriber data remain on `Video` and in the original Description
+route. No publication age or popularity value is fabricated. Before metadata arrives, unavailable
+compact fields are omitted.
+
+The timeline moves down 2 dp and the control group another 1.5 dp. Primary controls receive 8 dp gaps,
+which place their intended centers at 860/960/1060 px on the reference 1920 px canvas. The channel
+image is 28 dp inside its 36 dp control. Unsubscribed presentation reads Subscribe while the original
+Action index/callback stays intact. Original vector drawings supply outlined thumbs/bookmark;
+active original thumb icons and playlist highlight color retain their state indication.
+
+Personal row entry/reappearance targets the existing play/pause control. Hidden-overlay horizontal
+seek keys and dedicated seek keys explicitly target the existing timeline. Active seek mode and
+its original confirm/cancel callbacks are preserved; pending default focus is discarded when an
+explicit seek begins. Up can still move from transport controls to the timeline for ordinary seeking.
+
+The live panel lease also resizes AndroidX's fixed 360 dp inner preference container to match its
+612 px host, then restores its original parameters on release. The previous 720 px inner width had
+extended 108 px beyond the host's left edge. Preference rows use a 48 dp minimum with font padding
+removed: ordinary title/summary rows fit the measured 96 px target while longer real settings can
+grow rather than losing their explanatory text. The live preview bounds remain unchanged.
+
 ## Real video preview during settings
 
 `AppDialogActivity` requests a preview lease only for a normal player-origin dialog. It checks the top application view, a live PlaybackFragment/activity, the user's don't-resize preference, and PiP. Browse-origin dialogs, background playback, notifications/transparent dialogs, comments and opaque dialog activities keep their existing presentation path.

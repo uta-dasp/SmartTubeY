@@ -9,8 +9,8 @@
     <dimen name="lb_control_button_secondary_height">36dp</dimen>
     <dimen name="lb_control_icon_width">18dp</dimen>
     <dimen name="lb_control_icon_height">18dp</dimen>
-    <dimen name="lb_details_description_title_text_size">20sp</dimen>
-    <dimen name="lb_details_description_title_resized_text_size">20sp</dimen>
+    <dimen name="lb_details_description_title_text_size">21sp</dimen>
+    <dimen name="lb_details_description_title_resized_text_size">21sp</dimen>
     <dimen name="lb_details_description_title_baseline">20dp</dimen>
     <dimen name="lb_details_description_title_line_spacing">24dp</dimen>
     <dimen name="lb_details_description_under_title_baseline_margin">25dp</dimen>

@@ -93,6 +93,8 @@ public final class Video {
     public String likeCount;
     public String dislikeCount;
     public String subscriberCount;
+    public String viewCount;
+    public String publishedDate;
     public float volume = 1.0f;
     public boolean deArrowProcessed;
     public boolean isLiveEnd;
@@ -161,6 +163,7 @@ public final class Video {
         video.durationMs = item.getDurationMs();
         video.searchQuery = item.getSearchQuery();
         video.mediaItem = item;
+        video.publishedDate = item.getProductionDate();
 
         return video;
     }
@@ -190,6 +193,8 @@ public final class Video {
         video.isUpcoming = item.isUpcoming;
         video.clickTrackingParams = item.clickTrackingParams;
         video.mediaItem = item.mediaItem;
+        video.viewCount = item.viewCount;
+        video.publishedDate = item.publishedDate;
         video.group = item.group;
 
         return video;
@@ -772,6 +777,10 @@ public final class Video {
         likeCount = metadata.getLikeCount();
         dislikeCount = metadata.getDislikeCount();
         subscriberCount = metadata.getSubscriberCount();
+        viewCount = metadata.getViewCount();
+        // The browse item's production text is normally relative; full metadata may replace
+        // it with an absolute publication date. Keep the compact source when available.
+        if (TextUtils.isEmpty(publishedDate)) publishedDate = metadata.getPublishedDate();
         notificationStates = metadata.getNotificationStates();
         author = metadata.getAuthor();
         durationMs = metadata.getDurationMs();
@@ -833,6 +842,8 @@ public final class Video {
         video.metadataTitle = metadataTitle;
         video.secondTitle = secondTitle;
         video.metadataSecondTitle = metadataSecondTitle;
+        video.viewCount = viewCount;
+        video.publishedDate = publishedDate;
         video.percentWatched = percentWatched;
         video.cardImageUrl = cardImageUrl;
         video.fromQueue = fromQueue;

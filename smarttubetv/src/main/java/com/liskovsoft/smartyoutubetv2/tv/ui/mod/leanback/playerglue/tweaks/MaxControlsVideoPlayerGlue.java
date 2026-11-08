@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
@@ -18,6 +19,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.framedrops.P
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.framedrops.PlaybackTransportControlGlue;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowPresenter.TopEdgeFocusListener;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowPresenter.ViewHolder;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
 
 import java.lang.ref.WeakReference;
 import java.util.List;
@@ -54,6 +56,9 @@ public abstract class MaxControlsVideoPlayerGlue<T extends PlayerAdapter>
 
                         PlaybackBaseControlGlue<?> glue = (PlaybackBaseControlGlue<?>) obj;
                         viewHolder.getTitle().setText(glue.getTitle());
+                        if (PersonalPlayerPresentation.isEnabled(getContext())) {
+                            viewHolder.getTitle().setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                        }
                         viewHolder.getSubtitle().setText(glue.getSubtitle());
                         // MOD: add extra title line
                         //viewHolder.getBody().setText(glue.getBody());

@@ -585,6 +585,7 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
                 return false;
             }
             mInSeek = true;
+            ((PlaybackTransportRowView) view.findViewById(R.id.transport_row)).setPersonalSeekActive(true);
             mSeekClient.onSeekStarted();
             mSeekDataProvider = mSeekClient.getPlaybackSeekDataProvider();
             mPositions = mSeekDataProvider != null ? mSeekDataProvider.getSeekPositions() : null;
@@ -610,6 +611,7 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
                 return;
             }
             mInSeek = false;
+            ((PlaybackTransportRowView) view.findViewById(R.id.transport_row)).setPersonalSeekActive(false);
             mSeekClient.onSeekFinished(cancelled);
             if (mSeekDataProvider != null) {
                 mSeekDataProvider.reset();
@@ -1001,6 +1003,14 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
     @Override
     public void onReappear(RowPresenter.ViewHolder rowViewHolder) {
         ViewHolder vh = (ViewHolder) rowViewHolder;
+        if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(vh.view.getContext())) {
+            if (vh.view.hasFocus() && !vh.mInSeek) {
+                vh.setControlsMode(ViewHolder.CONTROLS_MODE_FULL);
+                ((PlaybackTransportRowView) vh.view.findViewById(R.id.transport_row))
+                        .requestPersonalDefaultFocus(View.FOCUS_FORWARD, null);
+            }
+            return;
+        }
         if (vh.view.hasFocus()) {
             // Reset position in mode 'Seek with confirmation (play while seeking)'
             vh.stopSeek(Build.VERSION.SDK_INT >= 21
@@ -1114,6 +1124,10 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
         vh.setCurrentPosition(row.getCurrentPosition());
         vh.setBufferedPosition(row.getBufferedPosition());
         row.setOnPlaybackProgressChangedListener(vh.mListener);
+        if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(vh.view.getContext())) {
+            PlaybackTransportRowView transport = (PlaybackTransportRowView) vh.view.findViewById(R.id.transport_row);
+            transport.post(transport::applyPendingPersonalFocus);
+        }
     }
 
     @Override

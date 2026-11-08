@@ -24,10 +24,24 @@ public class PersonalPlayerControlBar extends ControlBar {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         ViewParent parent = getParent();
-        while (parent instanceof View && ((View) parent).getId() != R.id.secondary_controls_dock) {
+        while (parent instanceof View && ((View) parent).getId() != R.id.secondary_controls_dock
+                && ((View) parent).getId() != R.id.controls_dock) {
             parent = parent.getParent();
         }
         if (!(parent instanceof View)) {
+            return;
+        }
+        if (((View) parent).getId() == R.id.controls_dock) {
+            int gap = Math.round(getResources().getDisplayMetrics().density * 8);
+            int width = Math.max(0, getChildCount() - 1) * gap;
+            for (int i = 0; i < getChildCount(); i++) width += getChildAt(i).getMeasuredWidth();
+            int cursor = (getWidth() - width) / 2;
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                int y = (getHeight() - child.getMeasuredHeight()) / 2;
+                child.layout(cursor, y, cursor + child.getMeasuredWidth(), y + child.getMeasuredHeight());
+                cursor += child.getMeasuredWidth() + gap;
+            }
             return;
         }
         int split = Math.min(3, getChildCount());

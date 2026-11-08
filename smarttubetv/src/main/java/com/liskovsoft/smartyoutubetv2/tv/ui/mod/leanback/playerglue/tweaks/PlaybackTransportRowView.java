@@ -26,6 +26,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import androidx.annotation.RestrictTo;
 import androidx.leanback.R;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -48,6 +49,9 @@ public class PlaybackTransportRowView extends LinearLayout {
     }
 
     private OnUnhandledKeyListener mOnUnhandledKeyListener;
+    private boolean mPersonalSeekFocusRequested;
+    private boolean mPersonalSeekActive;
+    private boolean mPersonalDefaultFocusPending;
 
     public PlaybackTransportRowView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -75,6 +79,10 @@ public class PlaybackTransportRowView extends LinearLayout {
 
     @Override
     protected boolean onRequestFocusInDescendants(int direction, Rect previouslyFocusedRect) {
+        if (PersonalPlayerPresentation.isEnabled(getContext()) && !mPersonalSeekActive) {
+            if (requestPersonalDefaultFocus(direction, previouslyFocusedRect)) return true;
+            mPersonalDefaultFocusPending = !mPersonalSeekFocusRequested;
+        }
         final View focused = findFocus();
         if (focused != null && focused.requestFocus(direction, previouslyFocusedRect)) {
             return true;
@@ -86,6 +94,39 @@ public class PlaybackTransportRowView extends LinearLayout {
             }
         }
         return super.onRequestFocusInDescendants(direction, previouslyFocusedRect);
+    }
+
+    public void setPersonalSeekFocusRequested(boolean requested) {
+        mPersonalSeekFocusRequested = requested;
+        if (requested) mPersonalDefaultFocusPending = false;
+    }
+    void setPersonalSeekActive(boolean active) {
+        mPersonalSeekActive = active;
+        if (active) mPersonalDefaultFocusPending = false;
+    }
+
+    boolean requestPersonalDefaultFocus(int direction, Rect previous) {
+        if (mPersonalSeekActive) return false;
+        View target = mPersonalSeekFocusRequested ? findViewById(R.id.playback_progress)
+                : findPlayPause(findViewById(R.id.controls_dock));
+        if (target == null && !mPersonalSeekFocusRequested) target = findViewById(R.id.controls_dock);
+        boolean focused = target != null && target.requestFocus(direction, previous);
+        if (focused) mPersonalDefaultFocusPending = false;
+        return focused;
+    }
+
+    void applyPendingPersonalFocus() {
+        if (mPersonalDefaultFocusPending && hasFocus()) requestPersonalDefaultFocus(View.FOCUS_FORWARD, null);
+    }
+
+    private static View findPlayPause(View view) {
+        if (view == null) return null;
+        if (Boolean.TRUE.equals(view.getTag(R.id.lb_control_play_pause))) return view;
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+            View found = findPlayPause(((ViewGroup) view).getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
     }
 
     @Override

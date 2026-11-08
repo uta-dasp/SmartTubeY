@@ -26,7 +26,10 @@ import androidx.leanback.widget.Action;
 import androidx.leanback.widget.PlaybackControlsRow;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.PresenterSelector;
+import androidx.appcompat.content.res.AppCompatResources;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.PaddingAction;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.TwoStateAction;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.actions.ActionHelpers;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
 
 /**
@@ -142,25 +145,45 @@ public class ControlButtonPresenterSelector extends PresenterSelector {
             int actionId = (int) action.getId();
             boolean info = actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_info;
             boolean subscribe = actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_subscribe;
+            boolean channel = actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_channel;
             boolean playPause = action instanceof PlaybackControlsRow.PlayPauseAction;
+            vh.view.setTag(R.id.lb_control_play_pause, playPause ? Boolean.TRUE : null);
             float density = vh.view.getResources().getDisplayMetrics().density;
             ViewGroup.LayoutParams buttonParams = vh.mFocusableView.getLayoutParams();
             buttonParams.width = Math.round(density * (info ? 98 : subscribe ? 90 : playPause ? 48 : 36));
             buttonParams.height = Math.round(density * (playPause ? 48 : 36));
             vh.mFocusableView.setLayoutParams(buttonParams);
             ViewGroup.LayoutParams iconParams = vh.mIcon.getLayoutParams();
-            iconParams.width = iconParams.height = Math.round(density * (playPause ? 24 : 18));
+            iconParams.width = iconParams.height = Math.round(density * (channel ? 28 : playPause ? 24 : 18));
             vh.mIcon.setLayoutParams(iconParams);
+            vh.mIcon.setPadding(0, 0, 0, 0);
+            int outline = actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_playlist_add
+                    ? com.liskovsoft.smartyoutubetv2.tv.R.drawable.personal_player_bookmark : 0;
+            if (action instanceof TwoStateAction && ((TwoStateAction) action).getIndex() == TwoStateAction.INDEX_OFF) {
+                if (actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_thumbs_up)
+                    outline = com.liskovsoft.smartyoutubetv2.tv.R.drawable.personal_player_thumb_up;
+                if (actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_thumbs_down)
+                    outline = com.liskovsoft.smartyoutubetv2.tv.R.drawable.personal_player_thumb_down;
+            }
+            if (outline != 0) vh.mIcon.setImageDrawable(AppCompatResources.getDrawable(vh.view.getContext(), outline));
             vh.mIcon.setVisibility(info || subscribe ? View.GONE : View.VISIBLE);
             if (vh.mLabel != null && (info || subscribe)) {
+                CharSequence label = action.getLabel1();
+                if (subscribe && action instanceof TwoStateAction && ((TwoStateAction) action).getIndex() == TwoStateAction.INDEX_OFF) {
+                    label = vh.view.getContext().getString(com.liskovsoft.smartyoutubetv2.tv.R.string.action_subscribe);
+                }
                 vh.mLabel.setText(info ? vh.view.getContext().getString(
-                        com.liskovsoft.smartyoutubetv2.tv.R.string.personal_player_description) : action.getLabel1());
+                        com.liskovsoft.smartyoutubetv2.tv.R.string.personal_player_description) : label);
+                if (subscribe) vh.mFocusableView.setContentDescription(label);
             }
             View.OnFocusChangeListener focusStyle = (view, focused) -> {
                 if (actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_channel) {
                     vh.mIcon.clearColorFilter();
                 } else if (focused) {
                     vh.mIcon.setColorFilter(Color.BLACK);
+                } else if (actionId == com.liskovsoft.smartyoutubetv2.tv.R.id.action_playlist_add &&
+                        action instanceof TwoStateAction && ((TwoStateAction) action).getIndex() == TwoStateAction.INDEX_ON) {
+                    vh.mIcon.setColorFilter(ActionHelpers.getIconHighlightColor(vh.view.getContext()));
                 } else {
                     // Preserve upstream multi-action highlight colors when not focused.
                     vh.mIcon.clearColorFilter();

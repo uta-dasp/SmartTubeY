@@ -183,6 +183,7 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
         openButton.setVisibility(View.VISIBLE);
         if ("settings_account".equals(key(item))) {
             Account account = MediaServiceManager.instance().getSelectedAccount();
+            detailIcon.setImageResource(R.drawable.personal_account_placeholder);
             if (account != null && account.getAvatarImageUrl() != null) Glide.with(this).load(account.getAvatarImageUrl()).circleCrop().into(detailIcon);
         }
     }
