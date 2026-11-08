@@ -341,7 +341,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         HQDialogController controller = PlaybackPresenter.instance(getContext()).getController(HQDialogController.class);
         return controller != null && controller.showFormatDialog(
                 title == R.string.personal_player_quality ? FormatItem.TYPE_VIDEO : FormatItem.TYPE_AUDIO,
-                getContext().getString(title));
+                getContext().getString(title), title == R.string.personal_player_quality);
     }
 
     private CharSequence personalSettingDescription(int title, Action action) {

@@ -6,6 +6,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerContr
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.VideoQualityOptions;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
@@ -88,6 +89,10 @@ public class HQDialogController extends BasePlayerController {
 
     /** Opens one track list without consuming the categories/listeners of the full HQ dialog. */
     public boolean showFormatDialog(int formatType, CharSequence title) {
+        return showFormatDialog(formatType, title, false);
+    }
+
+    public boolean showFormatDialog(int formatType, CharSequence title, boolean basicVideoQuality) {
         if (getPlayer() == null || mAppDialogPresenter == null ||
                 (formatType != FormatItem.TYPE_VIDEO && formatType != FormatItem.TYPE_AUDIO)) {
             return false;
@@ -97,11 +102,15 @@ public class HQDialogController extends BasePlayerController {
         if (formats == null || formats.isEmpty()) {
             return false;
         }
+        List<OptionItem> options = basicVideoQuality && formatType == FormatItem.TYPE_VIDEO
+                ? VideoQualityOptions.create(formats, getPlayer().getVideoFormat(), this::selectFormatOption)
+                : UiOptionItem.from(formats, this::selectFormatOption, getContext().getString(R.string.option_disabled));
+        if (options.isEmpty()) return false;
         fitVideoIntoDialog();
         mAppDialogPresenter.appendCategory(OptionCategory.from(
                 formatType == FormatItem.TYPE_VIDEO ? VIDEO_FORMATS_ID : AUDIO_FORMATS_ID,
                 OptionCategory.TYPE_RADIO_LIST, title,
-                UiOptionItem.from(formats, this::selectFormatOption, getContext().getString(R.string.option_disabled))));
+                options));
         // This panel cannot change the advanced categories. Their hide listeners belong to the full dialog.
         mAppDialogPresenter.showDialog(title);
         return true;

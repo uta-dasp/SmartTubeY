@@ -51,6 +51,23 @@ is relabeled as Auto, and unavailable official audio processing features are not
 The personal control bar also bypasses the legacy wrap-content center-margin measurement,
 so its edge groups anchor to the actual dock width.
 
+Basic personal Quality now groups supplied video tracks by the existing engine display
+resolution and rounded actual frame rate. The current selected format wins its group; all
+other groups retain the first candidate from TrackSelectorManager's codec/bitrate preference
+order. Only the source-provided list is considered: its support filtering and the user's
+explicit all-formats override remain authoritative. No additional codec support is inferred.
+Known high frame rates appear in labels such as 1080p60; simultaneous 24/30 variants are
+distinguished, while unknown frame rate is not fabricated as 30. Default/Disabled and
+unknown-resolution tracks remain in the original full HQ dialog under Advanced. The grouped
+display option forwards selection to its original FormatItem option, preserving persistence,
+presets, warnings and reload behavior. Basic Audio and the two-argument showFormatDialog API
+keep their original labels and choices. Other flavors and the full HQ category builder are unchanged.
+
+`VideoQualityOptionsTest` covers duplicate codec grouping, current-track priority, distinct
+frame rates, source-list preservation, excluded basic-only entries, and original callback
+identity. Its four JUnit tests also run standalone against the existing compiled contracts;
+no Android runtime or Gradle build is needed for those grouping cases.
+
 ## Measured overlay refinements
 
 The personal title uses 21 sp medium Android sans-serif and its description dock moves up
