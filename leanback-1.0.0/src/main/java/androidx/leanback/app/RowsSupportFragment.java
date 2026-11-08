@@ -254,7 +254,7 @@ public class RowsSupportFragment extends BaseRowSupportFragment implements
         }
         // When RowsSupportFragment is embedded inside a page fragment, we want to show
         // the title view only when we're on the first row or there is no data.
-        if (mMainFragmentAdapter != null) {
+        if (mMainFragmentAdapter != null && mMainFragmentAdapter.getFragmentHost() != null) {
             mMainFragmentAdapter.getFragmentHost().showTitleView(position <= 0);
         }
     }
@@ -300,7 +300,7 @@ public class RowsSupportFragment extends BaseRowSupportFragment implements
 
         mRecycledViewPool = null;
         mPresenterMapper = null;
-        if (mMainFragmentAdapter != null) {
+        if (mMainFragmentAdapter != null && mMainFragmentAdapter.getFragmentHost() != null) {
             mMainFragmentAdapter.getFragmentHost().notifyViewCreated(mMainFragmentAdapter);
         }
 
