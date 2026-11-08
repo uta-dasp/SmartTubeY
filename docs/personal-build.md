@@ -136,10 +136,15 @@ $currentApk = 'PATH_TO_VERIFIED_PERSONAL_APK'
 & (Join-Path $buildTools 'apksigner.bat') verify --verbose --print-certs $currentApk
 ```
 
-Arrange a protected copy of the existing keystore outside the source checkout
-before configuring a release. The key-migration/backup step should preserve its
-certificate. Keep keystores, passwords, account data, extracted reference APKs,
-and decompiled reference output outside Git.
+The existing personal signing key has been migrated into protected
+`private-signing` storage. A provisional signed release was built and verified
+locally with the same certificate as the installed personal app. Final release
+upgrade and physical-TV QA remain pending.
+
+Keep a secure backup of the existing protected `private-signing` directory
+outside this workspace. Keep that directory, its backup, keystore passwords,
+account data, extracted reference APKs, and decompiled reference output outside
+Git. Preserve the existing signing identity when restoring the backup.
 
 The existing build reads root `keystore.properties` when present. It then uses
 that signing configuration for both release and debug variants. The ignored
@@ -155,8 +160,8 @@ keyPassword=EXISTING_KEY_PASSWORD
 Use forward slashes in the Windows properties path. This document supplies no
 passwords or new-key generation step. Without that file the current release
 configuration has no signing key, so its release output needs signing before
-installation. The protected-key migration and final release upgrade test remain
-separate from the development APK checks.
+installation. Reverify the application ID and certificate on every final APK;
+the provisional verification does not replace final release QA.
 
 ## Produce and verify the final package
 
@@ -209,8 +214,22 @@ $tvSerial = 'YOUR_TV_SERIAL'
 & $adb '-s' $tvSerial install '-r' $releaseApk
 ```
 
-Keep the previous working personal APK for rollback. Official YouTube and the
-upstream SmartTube package identities remain distinct.
+Keep the previous working personal APK and its metadata for rollback. The current
+previous and provisional personal APKs use application ID `org.smarttubey.personal`,
+the same signer certificate, and versionCode `2462`. After checking those three
+properties, reinstall the known-good previous personal APK in place:
+
+```powershell
+$previousPersonalApk = 'PATH_TO_PREVIOUS_PERSONAL_APK'
+& $adb '-s' $tvSerial install '-r' '-t' $previousPersonalApk
+```
+
+This preserves app data; do not uninstall or clear data for this rollback. The
+`-t` flag also permits the previous development/test APK. If a future installed
+release has a higher versionCode, do not assume `-d` permits an in-place downgrade.
+Instead, rebuild the known-good source as a forward update with the same
+application ID and signing key and a versionCode higher than the installed one.
+Official YouTube and the upstream SmartTube package identities remain distinct.
 
 These instructions reproduce the source/toolchain configuration. Current
 `BuildConfig.TIMESTAMP` uses `System.currentTimeMillis()`, and incremental APK
