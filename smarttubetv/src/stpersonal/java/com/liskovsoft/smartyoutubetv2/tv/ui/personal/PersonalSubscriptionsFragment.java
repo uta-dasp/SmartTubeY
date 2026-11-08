@@ -200,7 +200,6 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
             }
         };
         horizontal.setHorizontalScrollBarEnabled(false);horizontal.setFillViewport(false);horizontal.setClipToPadding(false);
-        horizontal.setPadding(0,0,dp(48),0);
         videoGrid=new VerticalGridView(requireContext());videoGrid.setId(R.id.personal_subscriptions_videos);
         videoGrid.setNumColumns(3);videoGrid.setColumnWidth(dp(264));videoGrid.setHorizontalSpacing(dp(18));videoGrid.setVerticalSpacing(dp(32));
         videoGrid.setPadding(0,0,0,dp(35));videoGrid.setClipToPadding(false);videoGrid.setClipChildren(false);
@@ -211,6 +210,10 @@ public class PersonalSubscriptionsFragment extends Fragment implements VideoSect
         videoGrid.setAdapter(videoBridge);
         horizontal.addView(videoGrid,new HorizontalScrollView.LayoutParams(dp(828),-1));
         place(horizontal,232.5f,127.5f,-1,-1);
+        // Reserve a physical end gutter: trailing scroll padding alone lets the
+        // focused third column reach the screen edge and clips its outset ring.
+        FrameLayout.LayoutParams viewportParams=(FrameLayout.LayoutParams)horizontal.getLayoutParams();
+        viewportParams.rightMargin=dp(48);horizontal.setLayoutParams(viewportParams);
         videoGrid.setOnKeyInterceptListener(event->{
             if(event.getAction()==KeyEvent.ACTION_DOWN&&event.getKeyCode()==KeyEvent.KEYCODE_DPAD_LEFT&&videoGrid.getSelectedPosition()%3==0){channelGrid.requestFocus();return true;}
             return false;
