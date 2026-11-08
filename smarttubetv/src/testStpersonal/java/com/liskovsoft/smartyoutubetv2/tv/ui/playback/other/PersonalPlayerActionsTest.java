@@ -139,6 +139,44 @@ public class PersonalPlayerActionsTest {
         assertTrue(refreshed[0] >= 3);
     }
 
+    @Test public void directUtilitiesUseAllSixteenOriginalActionsAndReceiveStateChanges() {
+        VideoPlayerGlue glue = createGlue();
+        androidx.leanback.widget.ArrayObjectAdapter utilities = glue.getPersonalUtilityActions();
+        assertEquals(16, utilities.size());
+        assertEquals(R.id.action_pip, ((Action) utilities.get(0)).getId());
+        assertEquals(3, glue.getControlsRow().getPrimaryActionsAdapter().size());
+        assertEquals(9, glue.getControlsRow().getSecondaryActionsAdapter().size());
+        for (int index = 0; index < utilities.size(); index++) {
+            Action action = (Action) utilities.get(index);
+            assertSame(find(glue.createPersonalAdvancedActions(), (int) action.getId()).getData(), action);
+        }
+        int[] notifications = {0};
+        utilities.registerObserver(new androidx.leanback.widget.ObjectAdapter.DataObserver() {
+            @Override public void onItemRangeChanged(int start, int count) { notifications[0] += count; }
+        });
+        glue.setButtonState(R.id.action_sound_off, TwoStateAction.INDEX_ON);
+        assertEquals(1, notifications[0]);
+        glue.onActionClicked((Action) utilities.get(15));
+        assertEquals(R.id.action_sound_off, listener.actionId);
+        assertEquals(TwoStateAction.INDEX_ON, listener.actionState);
+        assertEquals(1, listener.actionCalls);
+    }
+
+    @Test public void hiddenUtilitiesKeepAdvancedFallbackAndCoreTransport() {
+        tweaks.setPlayerButtonDisabled(PlayerTweaksData.PLAYER_BUTTON_PIP | PlayerTweaksData.PLAYER_BUTTON_SOUND_OFF);
+        VideoPlayerGlue glue = createGlue();
+        androidx.leanback.widget.ArrayObjectAdapter utilities = glue.getPersonalUtilityActions();
+        assertEquals(14, utilities.size());
+        for (int index = 0; index < utilities.size(); index++) {
+            long id = ((Action) utilities.get(index)).getId();
+            assertTrue(id != R.id.action_pip && id != R.id.action_sound_off);
+        }
+        assertNotNull(find(glue.createPersonalAdvancedActions(), R.id.action_pip));
+        assertNotNull(find(glue.createPersonalAdvancedActions(), R.id.action_sound_off));
+        assertEquals(3, glue.getControlsRow().getPrimaryActionsAdapter().size());
+        assertEquals(9, glue.getControlsRow().getSecondaryActionsAdapter().size());
+    }
+
     private VideoPlayerGlue createGlue() {
         VideoPlayerGlue glue = new VideoPlayerGlue(context, player, listener);
         glue.setControlsRow(new PlaybackControlsRow(glue));
@@ -159,13 +197,13 @@ public class PersonalPlayerActionsTest {
     }
 
     private static final class RecordingListener implements VideoPlayerGlue.OnActionClickedListener {
-        int previous, next, actionId, actionState;
+        int previous, next, actionId, actionState, actionCalls;
         final List<Integer> longIds = new ArrayList<>();
         @Override public void onPrevious() { previous++; }
         @Override public void onNext() { next++; }
         @Override public void onPlay() { }
         @Override public void onPause() { }
-        @Override public void onAction(int id, int state) { actionId = id; actionState = state; }
+        @Override public void onAction(int id, int state) { actionId = id; actionState = state; actionCalls++; }
         @Override public void onLongAction(int id, int state) { longIds.add(id); }
         @Override public void onTopEdgeFocused() { }
         @Override public boolean onKeyDown(int code) { return false; }

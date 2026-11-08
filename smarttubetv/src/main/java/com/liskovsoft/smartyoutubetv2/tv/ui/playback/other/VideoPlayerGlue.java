@@ -106,6 +106,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private final Map<Action, UiOptionItem.DynamicDescription> mPersonalAdvancedItems = new HashMap<>();
     private final Map<Action, UiOptionItem.DynamicDescription> mPersonalOptionsItems = new HashMap<>();
     private Action mPersonalPlayPauseAction;
+    private ArrayObjectAdapter mPersonalUtilityActions;
 
     public VideoPlayerGlue(
             Context context,
@@ -295,6 +296,9 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         PlaybackRowPresenter rowPresenter = super.onCreateRowPresenter();
 
         ((PlaybackTransportRowPresenter) rowPresenter).setOnActionLongClickedListener(this);
+        if (PersonalPlayerPresentation.isEnabled(getContext())) {
+            ((PlaybackTransportRowPresenter) rowPresenter).setPersonalUtilityActions(getPersonalUtilityActions());
+        }
 
         return rowPresenter;
     }
@@ -316,6 +320,32 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         if (mPlayerTweaksData.isPlayerButtonEnabled(button)) {
             adapter.add(mActions.get(id));
         }
+    }
+
+    /** Direct SmartTube utilities retain the same objects and button visibility preferences. */
+    ArrayObjectAdapter getPersonalUtilityActions() {
+        if (mPersonalUtilityActions == null) {
+            mPersonalUtilityActions = new ArrayObjectAdapter();
+            int[][] actions = {
+                    {PlayerTweaksData.PLAYER_BUTTON_PIP, R.id.action_pip},
+                    {PlayerTweaksData.PLAYER_BUTTON_VIDEO_SPEED, R.id.action_video_speed},
+                    {PlayerTweaksData.PLAYER_BUTTON_REPEAT_MODE, R.id.action_repeat},
+                    {PlayerTweaksData.PLAYER_BUTTON_PLAYBACK_QUEUE, R.id.action_playback_queue},
+                    {PlayerTweaksData.PLAYER_BUTTON_HIGH_QUALITY, R.id.lb_control_high_quality},
+                    {PlayerTweaksData.PLAYER_BUTTON_VIDEO_STATS, R.id.action_video_stats},
+                    {PlayerTweaksData.PLAYER_BUTTON_SCREEN_DIMMING, R.id.action_screen_dimming},
+                    {PlayerTweaksData.PLAYER_BUTTON_AFR, R.id.action_afr},
+                    {PlayerTweaksData.PLAYER_BUTTON_CHAT, R.id.action_chat},
+                    {PlayerTweaksData.PLAYER_BUTTON_SEARCH, R.id.action_search},
+                    {PlayerTweaksData.PLAYER_BUTTON_SHARE, R.id.action_share},
+                    {PlayerTweaksData.PLAYER_BUTTON_SEEK_INTERVAL, R.id.action_seek_interval},
+                    {PlayerTweaksData.PLAYER_BUTTON_VIDEO_ZOOM, R.id.action_video_zoom},
+                    {PlayerTweaksData.PLAYER_BUTTON_VIDEO_ROTATE, R.id.action_rotate},
+                    {PlayerTweaksData.PLAYER_BUTTON_VIDEO_FLIP, R.id.action_flip},
+                    {PlayerTweaksData.PLAYER_BUTTON_SOUND_OFF, R.id.action_sound_off}};
+            for (int[] action : actions) addPersonalAction(mPersonalUtilityActions, action[0], action[1]);
+        }
+        return mPersonalUtilityActions;
     }
 
     /** Keep every original action reachable without exceeding ControlBarPresenter's 12-item limit. */
@@ -707,6 +737,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
             notifyActionChanged(
                     action,
                     (ArrayObjectAdapter) getControlsRow().getSecondaryActionsAdapter());
+            notifyActionChanged(action, mPersonalUtilityActions);
             refreshPersonalSettingDescriptions();
         }
     }

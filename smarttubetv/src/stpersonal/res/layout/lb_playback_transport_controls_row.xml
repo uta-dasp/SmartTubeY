@@ -24,6 +24,12 @@
             android:textColor="#F1F1F1" android:textSize="12sp" android:visibility="gone" />
     </LinearLayout>
 
+    <FrameLayout android:id="@id/personal_player_utilities_dock"
+        android:layout_width="match_parent" android:layout_height="68dp"
+        android:layout_gravity="bottom" android:layout_marginBottom="110dp"
+        android:layout_marginStart="48dp" android:layout_marginEnd="48dp"
+        android:clipChildren="false" android:clipToPadding="false" />
+
     <com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowView
         android:id="@+id/transport_row" android:layout_width="match_parent" android:layout_height="100dp"
         android:translationY="2dp"

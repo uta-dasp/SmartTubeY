@@ -14,7 +14,30 @@ Settings → Advanced; its scrollable preference list is independent of the cont
 12-item limit. The fallback `actions.addAll(mActions.values())` also includes future mapped
 upstream additions.
 
-Two remaining presentation gaps were corrected by this audit:
+The player also exposes the 16 non-core SmartTube actions directly in a personal-only
+horizontal utilities row above the timeline. The first enabled action is the original
+Background playback/PiP action. The row includes speed, repeat, queue, full HQ settings,
+statistics, screen dimming, AFR, chat/comments, search, share, seek interval, zoom, rotate,
+flip and sound. Each original icon has its original readable action name below it. The
+row obeys the existing player-button preferences; Advanced remains a fallback for hidden
+buttons and explicit Options commands.
+
+The 68dp row uses fixed 96dp cells and horizontal scrolling, so enabling all 16 actions
+does not meet the two core bars' 12-control limit. Its absolute dock leaves the existing
+timeline, transport, left/right actions and suggestion-row coordinates unchanged. It is
+hidden during compact seek/storyboard presentation and restored afterward. Up from the
+timeline's existing top-edge route enters the utilities; Down returns to the timeline;
+Up from utilities retains the original close-overlay behavior. Initial controls focus
+still selects Play/Pause, while a utility already focused on reappearance keeps focus.
+
+The row binds the same original action objects with the existing button presenter and
+original click, long-click and selection listeners. A third adapter receives the same
+state/icon invalidations as the core adapters. Per-action updates rebind the existing
+button and label rather than rebuilding the row, retaining focus and scroll. Unbind and
+adapter replacement unregister the old observer and clear the original button callbacks
+and pending tooltips. No playback controller or decoder is added.
+
+The following gaps were corrected by this audit and subsequent device validation:
 
 - Previous, play/pause, and next lived outside the map. Hiding their bar buttons left no
   on-screen fallback. Advanced now includes those three original transport objects. The
@@ -47,29 +70,29 @@ long press where a visible original button exists.
 | Previous | Center transport; Advanced | Original `SkipPreviousAction` → glue `previous()` → presenter `onPreviousClicked`; source restart threshold retained |
 | Play / pause | Center transport; Advanced; native Shorts feed OK | Original superclass `PlayPauseAction` / `PlayerAdapter`; Shorts changes the same engine's `setPlayWhenReady` before preserving presenter click notifications |
 | Next | Center transport; Advanced; native Shorts Down | Original `SkipNextAction` → glue `next()` → presenter `onNextClicked` |
-| Full playback / quality settings | Advanced → Playback settings | Original `HighQualityAction` → `HQDialogController.onHighQualityClicked` |
+| Full playback / quality settings | Utilities; Advanced → Playback settings | Original `HighQualityAction` → `HQDialogController.onHighQualityClicked` |
 | Video quality | Settings → Quality; full HQ above | Real `FormatItem` video list / `HQDialogController.selectFormatOption`; full HQ retains codec-specific variants and presets |
 | Audio track / language | Settings → Audio; full HQ above | Real audio `FormatItem` list, original selection/persistence; full HQ also retains preferred audio language |
 | Captions quick toggle | Visible CC; Advanced | Original `ClosedCaptioningAction` → `PlayerUIController.onSubtitleClicked` |
 | Caption tracks / translation / advanced settings | Settings → Captions; Options: captions | Basic panel uses actual tracks and source-language metadata; original `onSubtitleLongClicked` still exposes all original subtitle settings |
-| Speed toggle / speed choices | Settings → Speed; Advanced; Options: speed | `VideoStateController.onSpeedClicked/onSpeedLongClicked`; original per-video/channel state |
-| Repeat / playlist / shuffle / reverse / end mode | Settings → Repeat; Advanced; Options: playback mode | Original `PlaybackModeAction`; `PlayerUIController.applyRepeatMode/showPlaybackModeDialog` |
-| Statistics | Settings → Stats for nerds; Advanced | Original `VideoStatsAction` → `onDebugInfoClicked` / original debug view |
+| Speed toggle / speed choices | Utilities; Settings → Speed; Advanced; Options: speed | `VideoStateController.onSpeedClicked/onSpeedLongClicked`; original per-video/channel state |
+| Repeat / playlist / shuffle / reverse / end mode | Utilities; Settings → Repeat; Advanced; Options: playback mode | Original `PlaybackModeAction`; `PlayerUIController.applyRepeatMode/showPlaybackModeDialog` |
+| Statistics | Utilities; Settings → Stats for nerds; Advanced | Original `VideoStatsAction` → `onDebugInfoClicked` / original debug view |
 | SponsorBlock skip / toggle | Visible SponsorBlock; Advanced | Original `ContentBlockAction` → `SponsorBlockController`; current matched segment is skipped by the original short callback |
 | SponsorBlock categories / behavior | Options: SponsorBlock; global settings | Original `SponsorBlockSettingsPresenter`, original reloading callback |
-| Playback queue | Advanced | Original `PlaybackQueueAction` → `AppDialogUtil.showPlaybackQueueDialog`; selection calls presenter `onNewVideo` |
+| Playback queue | Utilities; Advanced | Original `PlaybackQueueAction` → `AppDialogUtil.showPlaybackQueueDialog`; selection calls presenter `onNewVideo` |
 | Add to playlist | Visible button; Advanced | Original `PlaylistAddAction` / `PlayerUIController.onPlaylistAddClicked` |
-| AFR toggle / configuration | Advanced; Options: AFR | Original `AFRAction`, `applyAfr`, `AutoFrameRateSettingsPresenter`, and `AutoFrameRateController` |
-| Picture in picture / background mode | Advanced; original global player settings | Original `PipAction` → `onPipClicked`; original engine-block/finish path and Android PiP handling |
-| Comments / live chat | Advanced; native Shorts comments | Original `ChatAction` broadcasts to `ChatController` and `CommentsController`; their real metadata selects comments or live chat |
+| AFR toggle / configuration | Utilities; Advanced; Options: AFR | Original `AFRAction`, `applyAfr`, `AutoFrameRateSettingsPresenter`, and `AutoFrameRateController` |
+| Picture in picture / background mode | First utility; Advanced; original global player settings | Original `PipAction` → `onPipClicked`; original engine-block/finish path and Android PiP handling |
+| Comments / live chat | Utilities; Advanced; native Shorts comments | Original `ChatAction` broadcasts to `ChatController` and `CommentsController`; their real metadata selects comments or live chat |
 | Chat layout / enable settings | Options: chat | Original `ChatController.onButtonLongClicked`; original left/right/disabled callbacks |
-| Screen dimming / screen off | Advanced; Options: screen dimming | Original `ScreenDimmingAction`, `prepareScreenOff/applyScreenOff/applyScreenOffTimeout/showScreenOffDialog` |
-| Seek interval | Advanced | Original `SeekIntervalAction` → `PlayerUIController.onSeekInterval` |
-| Zoom / aspect ratio / rotation settings | Advanced → Video zoom; full HQ | Original `VideoZoomAction` → original resize/zoom/aspect/rotation option categories and callbacks |
-| Rotate / flip | Advanced | Original `RotateAction` / `FlipAction` → original `onRotate/onFlip`, persisted through `PlayerData` |
-| Mute / sound settings | Advanced; Options: sound | Original `SoundOffAction`, `applySoundOff/showSoundOffDialog` |
-| Share | Advanced | Original `ShareAction` → `onShareLink` |
-| Search | Advanced | Original `SearchAction` → `onSearchClicked` |
+| Screen dimming / screen off | Utilities; Advanced; Options: screen dimming | Original `ScreenDimmingAction`, `prepareScreenOff/applyScreenOff/applyScreenOffTimeout/showScreenOffDialog` |
+| Seek interval | Utilities; Advanced | Original `SeekIntervalAction` → `PlayerUIController.onSeekInterval` |
+| Zoom / aspect ratio / rotation settings | Utilities; Advanced → Video zoom; full HQ | Original `VideoZoomAction` → original resize/zoom/aspect/rotation option categories and callbacks |
+| Rotate / flip | Utilities; Advanced | Original `RotateAction` / `FlipAction` → original `onRotate/onFlip`, persisted through `PlayerData` |
+| Mute / sound settings | Utilities; Advanced; Options: sound | Original `SoundOffAction`, `applySoundOff/showSoundOffDialog` |
+| Share | Utilities; Advanced | Original `ShareAction` → `onShareLink` |
+| Search | Utilities; Advanced | Original `SearchAction` → `onSearchClicked` |
 | Channel | Visible left action; Advanced; native Shorts author | Original `ChannelAction` / `openChannel` |
 | Description / timestamps | Visible description; Advanced; native Shorts title | Original `VideoInfoAction` → `onVideoInfoClicked`; original timestamp callbacks |
 | Subscribe / notifications | Visible left action; Advanced; native Shorts subscribe; Options: channel or subscribe | Original `SubscribeAction`, `onSubscribe`, `showNotificationsDialog`; account writes require deliberate user selection |
@@ -159,10 +182,26 @@ engine subclass: playing → paused → playing performs one engine write before
 and OK before engine readiness performs neither operation. Its selector is
 `com.liskovsoft.smartyoutubetv2.tv.ui.personal.shorts.PersonalShortsPlaybackTest`.
 
+The direct-row extension adds two action-model regressions to `PersonalPlayerActionsTest`
+and four real-presenter regressions in `PersonalPlayerUtilitiesPresenterTest`: all 16
+named cells, horizontal scroll and first/last boundaries; click/held-OK object forwarding
+without an extra short click; state/label refresh retaining focus and scroll, observer
+replacement/unbind cleanup; and the actual row's top-edge/utility/timeline focus route,
+reappearance focus, compact/empty visibility and unchanged core coordinates. The new
+selector is `com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PersonalPlayerUtilitiesPresenterTest`.
+
 At source handoff these tests are written but delegated to the build owner; this audit did
 not run Gradle, sign an APK, modify an account, or control the TV.
 
 Remaining final-APK checks, on regular playback and Shorts unless hardware/content-specific:
+
+- Confirm the named utilities row is visible without opening Settings, starts with Background
+  playback, fits the default choices, and scrolls through all 16 enabled choices. Verify the
+  actual background/PiP/resume effect and each original short/long action deliberately.
+- Verify Play → Up → timeline → Up → utilities; utility Down → timeline; utility Up closes
+  the overlay. Open a utility dialog and return; preserve utility focus, state and scroll.
+  Start/confirm/cancel seeking and verify storyboard clearance and dock restoration; disable
+  all utility button preferences and confirm the core/timeline coordinates stay unchanged.
 
 - Open More → Settings → Advanced; scroll through all actions and Options without truncation.
   Hide transport bar buttons, confirm Advanced transport works, then restore the preferences.
