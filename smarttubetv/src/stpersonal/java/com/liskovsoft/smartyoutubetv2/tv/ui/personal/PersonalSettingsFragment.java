@@ -41,6 +41,7 @@ import java.util.Locale;
 
 /** Three-column TV settings shell, backed by the existing SettingsGroup action contracts. */
 public class PersonalSettingsFragment extends Fragment implements SettingsSection {
+    private static final int FOCUS_ALL_OPTIONS = -1;
     private final List<SettingsItem> items = new ArrayList<>();
     private final List<TextView> categories = new ArrayList<>();
     private FrameLayout root;
@@ -116,6 +117,9 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
         openButton.setTextColor(colors()); openButton.setBackground(background(18, 0xFF272727));
         openButton.setPadding(dp(20), 0, dp(20), 0);
         openButton.setOnClickListener(view -> { if (inlineModel != null) openAllOptions(); else openSelected(); });
+        openButton.setOnFocusChangeListener((view, focused) -> {
+            if (focused && inlineModel != null) focusedOption = FOCUS_ALL_OPTIONS;
+        });
         openButton.setOnKeyListener((view, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && !categories.isEmpty()) {
                 if (event.getAction() == KeyEvent.ACTION_DOWN) categories.get(selected).requestFocus();
@@ -374,12 +378,14 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
     }
 
     private void openAllOptions() {
+        focusedOption = FOCUS_ALL_OPTIONS;
         awaitingDialogReturn = true;
         inlineModel.show(AppDialogPresenter.instance(requireContext()));
     }
 
     private void focusOption() {
-        if (!optionRows.isEmpty()) optionRows.get(Math.min(focusedOption, optionRows.size() - 1)).requestFocus();
+        if (focusedOption == FOCUS_ALL_OPTIONS && openButton != null) openButton.requestFocus();
+        else if (!optionRows.isEmpty()) optionRows.get(Math.min(focusedOption, optionRows.size() - 1)).requestFocus();
         else if (openButton != null) openButton.requestFocus();
     }
 
@@ -391,7 +397,9 @@ public class PersonalSettingsFragment extends Fragment implements SettingsSectio
     }
 
     private void closeInlineOptions() {
-        if (inlineModel != null) inlineModel.finish();
+        // Once a child dialog is opened, its registered callback owns completion. Destroying
+        // the underlying browse view must not finish the model before later child selections.
+        if (inlineModel != null && !awaitingDialogReturn) inlineModel.finish();
         inlineModel = null;
         inlineKey = null;
         awaitingDialogReturn = false;
