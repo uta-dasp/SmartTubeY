@@ -169,6 +169,8 @@ android {
         }
         stpersonal {
             applicationId "org.smarttubey.personal"
+            versionCode 2463
+            versionName "32.72.1"
             targetSdkVersion project.properties.compileSdkVersion
             matchingFallbacks = ['stbeta']
         }

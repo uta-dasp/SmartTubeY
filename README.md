@@ -8,6 +8,10 @@ Visual and interaction parity is still in progress. The upstream `stbeta`,
 See [Windows build and release instructions](docs/personal-build.md) and the
 [tracked license and notice inventory](docs/personal-third-party-notices.md).
 
+Download the signed ARMv7 APK from [SmartTubeY releases](https://github.com/uta-dasp/SmartTubeY/releases/latest).
+The release includes checksums and its source revision. It installs separately
+from official YouTube and uses manual updates.
+
 ## Upstream SmartTube documentation
 
 [<img src="images/badge_fdroid.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/app.smarttube.fdroid/)

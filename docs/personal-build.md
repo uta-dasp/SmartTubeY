@@ -6,6 +6,9 @@ under active development and visual/interaction parity remains in progress.
 The upstream `stbeta`, `ststable`, and `stfdroid` flavors remain in the project.
 The personal UI continues to use SmartTube's service and playback modules.
 
+The personal flavor's current version is `32.72.1` (code `2463`). Its version
+override leaves the upstream flavors' version values unchanged.
+
 The initial target is an Android 12, ARMv7 TV with a 1920 x 1080 Android UI
 coordinate space. A 4K panel/video stream and the UI's render resolution are
 separate measurements. Build the ARMv7 APK for that device.
@@ -102,7 +105,7 @@ that their debug symbols were not stripped.
 The ARMv7 output is:
 
 ```text
-smarttubetv/build/outputs/apk/stpersonal/debug/SmartTubeY_personal_32.72_armeabi-v7a.apk
+smarttubetv/build/outputs/apk/stpersonal/debug/SmartTubeY_personal_32.72.1_armeabi-v7a.apk
 ```
 
 The build also emits other configured ABI variants. Use the ABI-specific APK
