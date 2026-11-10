@@ -15,6 +15,7 @@ import androidx.leanback.widget.PlaybackControlsRow;
 import androidx.leanback.widget.Presenter;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tooltips.ControlButtonPresenterSelector;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,7 +109,7 @@ public class PersonalPlayerUtilitiesPresenterTest {
         }
     }
 
-    @Test public void actualRowRoutesSeekToUtilitiesAndKeepsCoreGeometryForSeekAndEmptyStates() {
+    @Test public void actualRowStartsOnPlayAndRoutesSeekToUtilitiesWithoutMovingCoreGeometry() {
         try (Fixture f = new Fixture()) {
             Activity activity = f.controller.get();
             FrameLayout root = new FrameLayout(activity); activity.setContentView(root);
@@ -135,14 +136,40 @@ public class PersonalPlayerUtilitiesPresenterTest {
             int transportTop = transport.getTop();
             int progressTop = row.mProgressBar.getTop();
             assertEquals(View.VISIBLE, row.mUtilitiesDock.getVisibility());
+            View outside = new View(activity); outside.setFocusableInTouchMode(true);
+            root.addView(outside, new FrameLayout.LayoutParams(1, 1));
+            assertTrue(outside.requestFocus());
+            View play = row.mControlsDock.findViewById(androidx.leanback.R.id.button);
+            // Both pinned grid entry paths must prefer the core action before any fade/reset.
+            ArrayList<View> focusables = new ArrayList<>();
+            created.view.addFocusables(focusables, View.FOCUS_FORWARD, View.FOCUSABLES_ALL);
+            assertEquals(1, focusables.size());
+            assertSame(play, focusables.get(0));
+            assertTrue(created.view.requestFocus(View.FOCUS_DOWN));
+            assertSame(play, created.view.findFocus());
+            assertSame(row.mProgressBar, transport.focusSearch(play, View.FOCUS_UP));
+            assertTrue(row.mProgressBar.requestFocus());
             assertSame(row.mTopEdge, transport.focusSearch(row.mProgressBar, View.FOCUS_UP));
             assertTrue(row.mTopEdge.requestFocus());
             assertTrue(row.mUtilitiesDock.hasFocus());
+            PersonalPlayerUtilitiesPresenter.ViewHolder utilities = (PersonalPlayerUtilitiesPresenter.ViewHolder) row.mUtilitiesVh;
+            assertTrue(utilities.buttons.get(15).view.requestFocus());
             View utilityFocus = created.view.findFocus();
+            assertTrue(created.view.requestFocus(View.FOCUS_DOWN));
+            assertSame(utilityFocus, created.view.findFocus());
             rowPresenter.onReappear(row);
             assertSame(utilityFocus, created.view.findFocus());
             key(utilityFocus, KeyEvent.KEYCODE_DPAD_DOWN);
             assertTrue(row.mProgressBar.isFocused());
+            assertTrue(outside.requestFocus());
+            transport.setPersonalSeekFocusRequested(true);
+            focusables.clear();
+            created.view.addFocusables(focusables, View.FOCUS_FORWARD, View.FOCUSABLES_ALL);
+            assertEquals(1, focusables.size());
+            assertSame(row.mProgressBar, focusables.get(0));
+            assertTrue(created.view.requestFocus(View.FOCUS_DOWN));
+            assertSame(row.mProgressBar, created.view.findFocus());
+            transport.setPersonalSeekFocusRequested(false);
             row.setControlsMode(1); // The source compact seek/storyboard presentation.
             row.mInSeek = true;
             rowPresenter.onBindViewHolder(created, model); // Metadata must not reveal utilities during seeking.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Presentation overlay only: all upstream transport, seek, progress and action IDs are retained. -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PersonalPlayerRowView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="374dp"
     android:clipChildren="false" android:clipToPadding="false">
 
@@ -64,4 +64,4 @@
                 android:id="@+id/date_time" android:layout_width="0dp" android:layout_height="0dp" />
         </RelativeLayout>
     </com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowView>
-</FrameLayout>
+</com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PersonalPlayerRowView>

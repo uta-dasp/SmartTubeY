@@ -27,6 +27,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.RestrictTo;
 import androidx.leanback.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
+import java.util.ArrayList;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -107,12 +108,29 @@ public class PlaybackTransportRowView extends LinearLayout {
 
     boolean requestPersonalDefaultFocus(int direction, Rect previous) {
         if (mPersonalSeekActive) return false;
-        View target = mPersonalSeekFocusRequested ? findViewById(R.id.playback_progress)
-                : findPlayPause(findViewById(R.id.controls_dock));
-        if (target == null && !mPersonalSeekFocusRequested) target = findViewById(R.id.controls_dock);
+        View target = personalDefaultFocusTarget();
         boolean focused = target != null && target.requestFocus(direction, previous);
         if (focused) mPersonalDefaultFocusPending = false;
         return focused;
+    }
+
+    boolean addPersonalDefaultFocusables(ArrayList<View> views, int direction, int mode) {
+        int before = views.size();
+        View target = personalDefaultFocusTarget();
+        if (target != null) target.addFocusables(views, direction, mode);
+        if (views.size() > before) return true;
+        // If binding is still pending, keep entry inside transport so its existing deferred
+        // focus update can select Play/Pause once the original action has been bound.
+        mPersonalDefaultFocusPending = !mPersonalSeekFocusRequested && !mPersonalSeekActive;
+        View progress = findViewById(R.id.playback_progress);
+        if (progress != null) progress.addFocusables(views, direction, mode);
+        return views.size() > before;
+    }
+
+    private View personalDefaultFocusTarget() {
+        View target = mPersonalSeekFocusRequested || mPersonalSeekActive ? findViewById(R.id.playback_progress)
+                : findPlayPause(findViewById(R.id.controls_dock));
+        return target != null ? target : findViewById(R.id.controls_dock);
     }
 
     void applyPendingPersonalFocus() {
