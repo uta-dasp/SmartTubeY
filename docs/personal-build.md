@@ -217,10 +217,12 @@ $tvSerial = 'YOUR_TV_SERIAL'
 & $adb '-s' $tvSerial install '-r' $releaseApk
 ```
 
-Keep the previous working personal APK and its metadata for rollback. The current
-previous and provisional personal APKs use application ID `org.smarttubey.personal`,
-the same signer certificate, and versionCode `2462`. After checking those three
-properties, reinstall the known-good previous personal APK in place:
+Keep the previous working personal APK and its metadata for recovery. Version
+`32.72.1` uses code `2463`; the earlier `32.72` release uses code `2462`. The
+earlier APK cannot be assumed to install over this patch. An in-place recovery
+requires the same application ID `org.smarttubey.personal`, the retained signer,
+and a compatible versionCode. When those properties permit it, reinstall the
+known-good compatible personal APK in place:
 
 ```powershell
 $previousPersonalApk = 'PATH_TO_PREVIOUS_PERSONAL_APK'
