@@ -8,9 +8,11 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.PlaybackState;
 import android.os.Looper;
-import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
@@ -30,7 +32,11 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
 import org.robolectric.android.controller.ServiceController;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.Implementation;
+import org.robolectric.annotation.Implements;
+import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowApplication;
+import org.robolectric.shadows.ShadowMediaController;
 import org.robolectric.shadows.ShadowService;
 import org.robolectric.util.ReflectionHelpers;
 import org.w3c.dom.Document;
@@ -114,50 +120,66 @@ public class PersonalBackgroundPlaybackTest {
         assertNull("Notification Stop must not open Browse or another Activity", app.getNextStartedActivity());
     }
 
-    @Test public void foregroundNotificationUsesOriginalSessionAndExplicitTransportCommands() {
-        int[] commands = {0, 0};
-        session.setCallback(new MediaSessionCompat.Callback() {
-            @Override public void onPlay() { commands[0]++; state(PlaybackStateCompat.STATE_PLAYING); }
-            @Override public void onPause() { commands[1]++; state(PlaybackStateCompat.STATE_PAUSED); }
-        }, new Handler(Looper.getMainLooper()));
+    @Test
+    @Config(shadows = RecordingTransportControls.class)
+    public void foregroundNotificationUsesOriginalSessionAndExplicitTransportCommands() {
         state(PlaybackStateCompat.STATE_PLAYING);
-        session.setMetadata(new MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Existing media title").build());
         ServiceController<RecordingService> owner = Robolectric.buildService(RecordingService.class).create();
         try {
             RecordingService service = owner.get();
             assertEquals(Service.START_NOT_STICKY, service.onStartCommand(startIntent(), 0, 1));
+            MediaControllerCompat compat = ReflectionHelpers.getField(service, "controller");
+            assertNotNull("Service must connect to the supplied original session", compat);
+            assertNotNull(session.getSessionToken().getToken());
+            assertEquals(session.getSessionToken(), compat.getSessionToken());
+            MediaController nativeController = (MediaController) compat.getMediaController();
+            ShadowMediaController controller = Shadows.shadowOf(nativeController);
+            RecordingTransportControls transport = Shadow.extract(nativeController.getTransportControls());
+            // Robolectric4.6.1 does not bridge live MediaSession metadata or transport IPC.
+            // Deliver platform events through its supported controller shadow, and record
+            // native transport calls without replacing the service or compat controller.
+            controller.executeOnMetadataChanged(new MediaMetadata.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, "Existing media title").build());
             Shadows.shadowOf(Looper.getMainLooper()).idle();
             ShadowService shadow = Shadows.shadowOf(service);
-            Notification notification = shadow.getLastForegroundNotification();
+            assertNotNull(shadow.getLastForegroundNotification());
+            NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
+            Notification notification = Shadows.shadowOf(manager).getNotification(PersonalBackgroundPlaybackService.NOTIFICATION_ID);
             assertNotNull(notification);
             assertTrue(notification.icon != 0);
             assertEquals(Notification.CATEGORY_TRANSPORT, notification.category);
             assertEquals("Existing media title", notification.extras.getCharSequence(Notification.EXTRA_TITLE));
-            assertNotNull("Notification must refer to the existing MediaSession", notification.extras.getParcelable("android.mediaSession"));
+            assertEquals("Notification must refer to the existing MediaSession", session.getSessionToken().getToken(),
+                    notification.extras.getParcelable("android.mediaSession"));
             Intent open = Shadows.shadowOf(notification.contentIntent).getSavedIntent();
             assertEquals(SplashActivity.class.getName(), open.getComponent().getClassName());
-            NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
             NotificationChannel channel = manager.getNotificationChannel(PersonalBackgroundPlaybackService.CHANNEL_ID);
             assertEquals(NotificationManager.IMPORTANCE_LOW, channel.getImportance());
             assertNull(channel.getSound());
-            assertEquals(0, commands[0]);
-            assertEquals(0, commands[1]);
+            assertEquals(0, transport.plays);
+            assertEquals(0, transport.pauses);
 
             assertEquals(PersonalBackgroundPlaybackService.ACTION_PAUSE,
                     Shadows.shadowOf(notification.actions[0].actionIntent).getSavedIntent().getAction());
             service.onStartCommand(new Intent().setAction(PersonalBackgroundPlaybackService.ACTION_PAUSE), 0, 2);
+            assertEquals(1, transport.pauses);
+            assertEquals(0, transport.plays);
+            PlaybackStateCompat pausedState = state(PlaybackStateCompat.STATE_PAUSED);
+            controller.executeOnPlaybackStateChanged((PlaybackState) pausedState.getPlaybackState());
             Shadows.shadowOf(Looper.getMainLooper()).idle();
-            assertEquals(1, commands[1]);
-            assertEquals(0, commands[0]);
             Notification paused = Shadows.shadowOf(manager).getNotification(PersonalBackgroundPlaybackService.NOTIFICATION_ID);
             assertNotNull(paused);
             assertEquals(PersonalBackgroundPlaybackService.ACTION_PLAY,
                     Shadows.shadowOf(paused.actions[0].actionIntent).getSavedIntent().getAction());
             service.onStartCommand(new Intent().setAction(PersonalBackgroundPlaybackService.ACTION_PLAY), 0, 3);
+            assertEquals(1, transport.plays);
+            assertEquals(1, transport.pauses);
+            PlaybackStateCompat playingState = state(PlaybackStateCompat.STATE_PLAYING);
+            controller.executeOnPlaybackStateChanged((PlaybackState) playingState.getPlaybackState());
             Shadows.shadowOf(Looper.getMainLooper()).idle();
-            assertEquals(1, commands[0]);
-            assertEquals(1, commands[1]);
+            Notification playing = Shadows.shadowOf(manager).getNotification(PersonalBackgroundPlaybackService.NOTIFICATION_ID);
+            assertEquals(PersonalBackgroundPlaybackService.ACTION_PAUSE,
+                    Shadows.shadowOf(playing.actions[0].actionIntent).getSavedIntent().getAction());
         } finally { owner.destroy(); }
     }
 
@@ -189,9 +211,11 @@ public class PersonalBackgroundPlaybackTest {
                 .putExtra(PersonalBackgroundPlaybackService.EXTRA_TITLE, "Fallback title");
     }
 
-    private void state(int state) {
-        session.setPlaybackState(new PlaybackStateCompat.Builder().setState(state, 0, 1f)
-                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE).build());
+    private PlaybackStateCompat state(int state) {
+        PlaybackStateCompat value = new PlaybackStateCompat.Builder().setState(state, 0, 1f)
+                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE).build();
+        session.setPlaybackState(value);
+        return value;
     }
 
     private static Element named(Document document, String tag, String name) {
@@ -207,6 +231,13 @@ public class PersonalBackgroundPlaybackTest {
     public static final class RecordingService extends PersonalBackgroundPlaybackService {
         int stops;
         @Override protected void stopRetainedPlayer() { stops++; }
+    }
+
+    @Implements(MediaController.TransportControls.class)
+    public static final class RecordingTransportControls {
+        int plays, pauses;
+        @Implementation protected void play() { plays++; }
+        @Implementation protected void pause() { pauses++; }
     }
 
     private static final class RecordingFragment extends PlaybackFragment {
