@@ -1021,7 +1021,6 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
         if (com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation.isEnabled(vh.view.getContext())) {
             if (vh.view.hasFocus() && !vh.mInSeek) {
                 vh.setControlsMode(ViewHolder.CONTROLS_MODE_FULL);
-                if (vh.mUtilitiesDock != null && vh.mUtilitiesDock.hasFocus()) return;
                 ((PlaybackTransportRowView) vh.view.findViewById(R.id.transport_row))
                         .requestPersonalDefaultFocus(View.FOCUS_FORWARD, null);
             }

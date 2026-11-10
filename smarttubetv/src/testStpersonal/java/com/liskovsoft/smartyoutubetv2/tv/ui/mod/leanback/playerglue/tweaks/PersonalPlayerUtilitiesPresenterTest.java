@@ -158,9 +158,18 @@ public class PersonalPlayerUtilitiesPresenterTest {
             assertTrue(created.view.requestFocus(View.FOCUS_DOWN));
             assertSame(utilityFocus, created.view.findFocus());
             rowPresenter.onReappear(row);
+            assertSame(play, created.view.findFocus());
+            assertSame(row.mProgressBar, transport.focusSearch(play, View.FOCUS_UP));
+            assertTrue(row.mProgressBar.requestFocus());
+            assertSame(row.mTopEdge, transport.focusSearch(row.mProgressBar, View.FOCUS_UP));
+            assertTrue(row.mTopEdge.requestFocus());
             assertSame(utilityFocus, created.view.findFocus());
             key(utilityFocus, KeyEvent.KEYCODE_DPAD_DOWN);
             assertTrue(row.mProgressBar.isFocused());
+            row.mInSeek = true;
+            rowPresenter.onReappear(row);
+            assertSame(row.mProgressBar, created.view.findFocus());
+            row.mInSeek = false;
             assertTrue(outside.requestFocus());
             transport.setPersonalSeekFocusRequested(true);
             focusables.clear();
