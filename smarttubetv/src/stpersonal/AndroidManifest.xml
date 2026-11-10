@@ -9,6 +9,15 @@
         <activity
             android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity"
             android:theme="@style/Personal.BrandSplash" />
+        <!-- Keep the retained player out of the browse task's vendor hidden-task group. -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackActivity"
+            android:taskAffinity="${applicationId}.playback" />
+        <service
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalBackgroundPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false" />
         <activity-alias
             android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivityAlt"
             android:icon="@mipmap/app_icon_v2"

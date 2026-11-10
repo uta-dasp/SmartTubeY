@@ -83,6 +83,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.BackboneQueueNavigato
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.VideoPlayerGlue;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerDialogPresentation;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalPlayerPresentation;
+import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.PersonalBackgroundPlaybackService;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.other.VideoPlayerGlue.OnActionClickedListener;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.previewtimebar.StoryboardSeekDataProvider;
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.chat.LiveChatView;
@@ -406,6 +407,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     private void releasePlayer() {
+        PersonalBackgroundPlaybackService.stop(getContext());
         if (mPlayer != null) {
             Log.d(TAG, "releasePlayer: Start releasing player engine...");
             mPlaybackPresenter.onEngineReleased();
@@ -1094,6 +1096,21 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     @Override
     public void blockEngine(boolean block) {
         mIsEngineBlocked = block;
+        if (block && isEngineInitialized()) {
+            Video video = getVideo();
+            PersonalBackgroundPlaybackService.start(getContext(),
+                    mMediaSession != null ? mMediaSession.getSessionToken() : null,
+                    video != null ? video.getTitle() : null);
+        } else PersonalBackgroundPlaybackService.stop(getContext());
+    }
+
+    /** Notification Stop releases the existing background engine without navigating to a new Activity. */
+    public void stopPersonalBackgroundPlayback() {
+        if (PersonalPlayerPresentation.isEnabled(getContext()) && isEngineBlocked()) {
+            mIsEngineBlocked = false;
+            if (mPlayer != null) mPlayer.setPlayWhenReady(false);
+            releasePlayer();
+        }
     }
 
     @Override
