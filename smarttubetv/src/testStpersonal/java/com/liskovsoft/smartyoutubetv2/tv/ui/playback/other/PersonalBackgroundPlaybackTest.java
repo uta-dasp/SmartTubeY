@@ -138,6 +138,7 @@ public class PersonalBackgroundPlaybackTest {
             // Robolectric4.6.1 does not bridge live MediaSession metadata or transport IPC.
             // Deliver platform events through its supported controller shadow, and record
             // native transport calls without replacing the service or compat controller.
+            controller.executeOnPlaybackStateChanged((PlaybackState) state(PlaybackStateCompat.STATE_PLAYING).getPlaybackState());
             controller.executeOnMetadataChanged(new MediaMetadata.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, "Existing media title").build());
             Shadows.shadowOf(Looper.getMainLooper()).idle();
