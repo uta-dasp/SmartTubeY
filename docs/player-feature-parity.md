@@ -28,7 +28,18 @@ timeline, transport, left/right actions and suggestion-row coordinates unchanged
 hidden during compact seek/storyboard presentation and restored afterward. Up from the
 timeline's existing top-edge route enters the utilities; Down returns to the timeline;
 Up from utilities retains the original close-overlay behavior. Initial controls focus
-still selects Play/Pause, while a utility already focused on reappearance keeps focus.
+and the hidden-controls reset select Play/Pause. Normal visible-row focus requests
+preserve the current utility, and Up from the timeline remembers the last utility.
+Active seek entry continues to focus the progress bar.
+
+The personal player has a distinct task affinity, so firmware that removes hidden
+tasks sharing the browse affinity does not discard it when opening the TV launcher.
+Blocking the initialized engine starts a personal media-playback foreground service
+before navigating away. Its notification controls the existing MediaSession; it does
+not create another player or override audio focus. Returning to the player, releasing
+the engine, or explicitly stopping background playback removes the service. A service
+restart does not reconstruct or resume playback. Launcher/non-media-app continuation
+and competing audio focus require physical validation on the target device.
 
 The row binds the same original action objects with the existing button presenter and
 original click, long-click and selection listeners. A third adapter receives the same
